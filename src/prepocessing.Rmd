@@ -1,0 +1,62 @@
+---
+title: "Preprocessing"
+output: html_notebook
+---
+
+
+```{r}
+#On choisit le fichier qui contient les données
+fic = file.choose()
+data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
+head(data)
+```
+
+
+```{r}
+print(colnames(data))
+print(dim(data))
+```
+
+```{r}
+#Compter le nombre de valeurs manquantes dans chacune des colonnes
+sapply(data,function(x) sum(is.na(x)))
+```
+
+```{r}
+#Afficher un graph avec les valeurs manquantes vs les valeurs observées
+library(Amelia)
+missmap(data, main = "Missing values vs observed")
+```
+On supprime X.1 et X car toutes les lignes contiennent des valeurs manquantes 
+```{r}
+data$X = NULL
+data$X.1 = NULL
+#On supprime les lignes contenant des valeurs manquantes 
+for(i in 1:15){
+  data = subset(data, !is.na(data[i,]))
+}
+dim(data)
+```
+```{r}
+#On regarde les types des variables afin de convertir les chr en le format adéquat pour les différents traitements
+str(data)
+```
+
+```{r}
+data$Date = as.Date(data$Date,format='%d/%m/%Y' )
+data$CO.GT. = as.numeric(sub(",", ".", data$CO.GT.))
+data$C6H6.GT. = as.numeric(sub(",", ".", data$C6H6.GT.))
+data$T = as.numeric(sub(",", ".", data$T))
+data$RH = as.numeric(sub(",", ".", data$RH))
+data$AH = as.numeric(sub(",", ".", data$AH))
+head(data)
+```
+
+
+
+```{r}
+str(data)
+```
+
+
+
