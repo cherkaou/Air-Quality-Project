@@ -1,0 +1,55 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+#Supprime toutes les variables locales 
+rm(list = ls())
+```
+
+```{r}
+#On appelle le script de cleaningData (choisir l'emplacement de cleaningData.R)
+path = file.choose()
+#Choisir l'emplacement des données
+source(path)
+```
+
+
+
+```{r}
+summary(daily_data)
+```
+
+```{r}
+#On dispose d'une observation de PT08.S3.NOX par jour pendant 341 jours (d'où start=1 :  premier jours, frequency = 1 : une observation par jour
+ts_PT08.S3.NOx. = ts(daily_data$PT08.S3.NOx., start=1, frequency = 1)
+plot(ts_PT08.S3.NOx., col="violetred2" )
+```
+
+
+```{r}
+#On stationnarise la série
+ts_stat_PT08.S3.NOx. = diff(ts_PT08.S3.NOx.)
+plot(ts_stat_PT08.S3.NOx.)
+```
+
+```{r}
+#On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S3.NOx.)
+print(test_stationnarity)
+```
+
+
+```{r}
+#On trace la fonction acf pour avoir une idée sur le modèles MA
+acf(ts_stat_PT08.S3.NOx., main = "ACF")
+```
+
+
+
+```{r}
+#On trace la fonction acf pour avoir une idée sur le modèles AR
+pacf(ts_stat_PT08.S3.NOx., main = "PACF")
+```
+
