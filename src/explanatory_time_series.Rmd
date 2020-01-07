@@ -1,0 +1,55 @@
+---
+title: "Untitled"
+author: Acer
+date: 07/01/2020
+output: rmarkdown::html_vignette
+---
+```{r}
+
+rm(list = ls())
+#Choisir l'emplacement des données
+path = file.choose()
+source(path)
+
+
+library(KFAS)
+ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
+
+```
+```{r}
+#On stationnarise la série
+ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency =1)
+ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
+daily_data$PT08.S4.NO2._stat <- c(0,diff(daily_data$PT08.S4.NO2.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
+
+
+```
+
+```{r}
+#On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S4.NO2.)
+print(test_stationnarity)
+```
+```
+
+```{r}
+ggplot(daily_data,  aes(x=Date, y=PT08.S1.CO.)) + geom_line()
+```
+
+```{r}
+#On stationnarise la série
+ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency =1)
+ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
+daily_data$PT08.S1.CO._stat <- c(0,diff(daily_data$PT08.S1.CO.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S1.CO._stat)) + geom_line()
+```
+
+
+```{r}
+#On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S1.CO.)
+print(test_stationnarity)
+```
