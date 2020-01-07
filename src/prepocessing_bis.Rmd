@@ -1,0 +1,133 @@
+---
+title: "Preprocessing"
+output: html_notebook
+---
+
+library(Amelia)
+
+```{r}
+#On choisit le fichier qui contient les données
+fic = file.choose()
+data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
+head(data)
+```
+
+
+```{r}
+print(colnames(data))
+print(dim(data))
+```
+
+
+```{r}
+#Compter le nombre de valeurs manquantes dans chacune des colonnes
+sapply(data,function(x) sum(is.na(x)))
+```
+
+```{r}
+#Afficher un graph avec les valeurs manquantes vs les valeurs observées
+library(Amelia)
+missmap(data, main = "Missing values vs observed")
+```
+On supprime X.1 et X car toutes les lignes contiennent des valeurs manquantes 
+```{r}
+data$X = NULL
+data$X.1 = NULL
+#On supprime les lignes contenant des valeurs manquantes 
+for(i in 1:15){
+  data = subset(data, !is.na(data[,i]))
+}
+dim(data)
+```
+```{r}
+#On regarde les types des variables afin de convertir les chr en le format adéquat pour les différents traitements
+str(data)
+```
+
+```{r}
+data$Date = as.Date(data$Date,format='%d/%m/%Y' )
+data$CO.GT. = as.numeric(sub(",", ".", data$CO.GT.))
+data$C6H6.GT. = as.numeric(sub(",", ".", data$C6H6.GT.))
+data$T = as.numeric(sub(",", ".", data$T))
+data$RH = as.numeric(sub(",", ".", data$RH))
+data$AH = as.numeric(sub(",", ".", data$AH))
+data
+```
+
+
+
+```{r}
+str(data)
+```
+
+```{r}
+summary(data)
+```
+
+
+```{r}
+data$NMHC.GT.=NULL
+dim(data)
+```
+
+
+```{r}
+#On supprime les lignes contenant des valeurs manquantes (-200)
+for(j in 1:14){
+ data = subset(data, data[,j]!=-200)
+}
+dim(data)
+```
+
+
+```{r}
+library(data.table)
+#On regroupe les données par jour en supprimant le temps et en prenant la moyenne de toutes les concentrations de gaz par jour
+daily_data = copy(data)
+daily_data$Time = NULL
+daily_data = apply(daily_data[,2:13],2,tapply, daily_data$Date,mean )
+daily_data = as.data.frame(daily_data)
+setDT(daily_data, keep.rownames = "Date")
+setDF(daily_data)
+daily_data$Date = as.Date(daily_data$Date,format="%Y-%m-%d" )
+dim(daily_data)
+daily_data
+```
+
+
+
+```{r}
+summary(daily_data)
+```
+
+```{r}
+#Afficher un graph avec les valeurs manquantes vs les valeurs observées
+library(Amelia)
+missmap(daily_data, main = "Missing values vs observed")
+```
+
+```{r}
+daily_data
+```
+
+
+```{r}
+colors = c('red', 'blue', 'green','violet','orange','yellow','purple','brown')
+for(i in 2:13){
+  j = sample(1:length(colors),1)
+  plot(daily_data$Date, daily_data[,i],"l", xlab = 'Day', ylab = colnames(daily_data)[i], col=colors[j], main =paste(as.character(colnames(daily_data)[i]),"concentration") )
+}
+```
+
+
+```{r}
+reg<-lm(daily_data$PT08.S3.NOx.~daily_data$CO.GT.+daily_data$PT08.S1.CO.+daily_data$C6H6.GT.+daily_data$PT08.S2.NMHC.+daily_data$NOx.GT.+daily_data$NO2.GT.+daily_data$PT08.S4.NO2.+daily_data$PT08.S5.O3.+daily_data$T+daily_data$RH+daily_data$AH)
+summary(reg)
+```
+
+
+```{r}
+#Regression avec les r�ponses des capteurs uniquement
+reg<-lm(daily_data$PT08.S3.NOx.~+daily_data$PT08.S1.CO.+daily_data$PT08.S2.NMHC.+daily_data$PT08.S4.NO2.+daily_data$PT08.S5.O3.+daily_data$T+daily_data$RH+daily_data$AH)
+summary(reg)
+```
