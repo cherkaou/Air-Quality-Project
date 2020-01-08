@@ -12,6 +12,12 @@ date : "`r format(Sys.time(), '%d %B, %Y')`"
 Our project consists of time series analysis using R programming language. Our data set contains the responses of a gas mutisensor device deployed on the field in an Italian city, in a significantly polluted area, at road level. The data set contains 9358 instances of hourly averaged responses from an array of 5 metal oxide chemical sensors embedded in an Air Quality Chemical Multisensor Device. Data were recorded from March 2004 to February 2005. 
 
 ```{r, echo=FALSE}
+library(Amelia)
+library(data.table)
+```
+
+
+```{r, echo=FALSE}
 #Spécifier le chemin du fichier .csv 
 fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
 data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
@@ -42,11 +48,144 @@ str(data)
  		
 
 \section{I)-Cleaning and preprocessing}
-As we can see in the str(dim) output, our data contains a certain number of variables that are of character type which make it not directly exploitable, also some numbers
+\subsection{1) Data cleaning}
+As we can see in the str(dim) output, our data contains missing values, some are directly reported as NA and others have been assigned to -200. It also contains a certain number of numeric variables that are characters which makes it not directly exploitable and some numbers have commas within them. For all these reasons, we had to clean our data set first so that we can exploit it afterwards.
 
-\subsection{1) Data cleaning}s
+```{r}
+missmap(data, main = "Missing values vs observed")
+```
+We remove X1 and X beacause they have no data within them, also we compute the necessary changes so that our data is exploitable afterwards.
+
+```{r, echo=FALSE}
+data$X = NULL
+data$X.1 = NULL
+#On supprime les lignes contenant des valeurs manquantes 
+for(i in 1:15){
+  data = subset(data, !is.na(data[,i]))
+}
+
+data$Date = as.Date(data$Date,format='%d/%m/%Y' )
+data$CO.GT. = as.numeric(sub(",", ".", data$CO.GT.))
+data$C6H6.GT. = as.numeric(sub(",", ".", data$C6H6.GT.))
+data$T = as.numeric(sub(",", ".", data$T))
+data$RH = as.numeric(sub(",", ".", data$RH))
+data$AH = as.numeric(sub(",", ".", data$AH))
+```
+
+We noticed that NHMC contains a lot of -200 values, so we prefered to deleted along with all the lines that contain -200. 
+```{r}
+summary(data$NMHC.GT.)
+```
+
+```{r, echo=FALSE}
+data$NMHC.GT.=NULL
+for(j in 1:14){
+ data = subset(data, data[,j]!=-200)
+}
+
+```
+
+```{r}
+str(data)
+```
+
+Now that our data is nearly clean, we chose to consider the daily concentration of the different gases our main focus of study by taking the average of the concentrations observed daily. 
+```{r, echo=FALSE}
+daily_data = copy(data)
+daily_data$Time = NULL
+daily_data = apply(daily_data[,2:13],2,tapply, daily_data$Date,mean )
+daily_data = as.data.frame(daily_data)
+setDT(daily_data, keep.rownames = "Date")
+setDF(daily_data)
+daily_data$Date = as.Date(daily_data$Date,format="%Y-%m-%d" )
+```
+
+We obtain 341 observations of 13 variables.
+```{r}
+str(daily_data)
+```
+```{r}
+missmap(daily_data, main = "Missing values vs observed")
+```
+Since our data is all observed now, we can start plotting it to visualize what our data set looks like. 
+
+```{r, echo=FALSE}
+par(mfrow=c(2,2))
+colors = c('red', 'blue', 'green','violet','orange','yellow','purple','brown')
+v=c(11,12,13)
+for(i in 2:13){
+  j = sample(1:length(colors),1)
+  if(i %in% v){
+    plot(daily_data$Date, daily_data[,i],"l", xlab = 'Day', ylab = colnames(daily_data)[i], col=colors[j], main =paste(as.character(colnames(daily_data)[i]),"measurement") )
+  }
+  else{
+    plot(daily_data$Date, daily_data[,i],"l", xlab = 'Day', ylab = colnames(daily_data)[i], col=colors[j], main =paste(as.character(colnames(daily_data)[i]),"concentration") )
+  }
+  
+  
+}
+```
+
+The variables starting with PT are the responses of the sensors measuring the concentration of the gas concerned. When investigating our data and by doing some research on air pollution, we found that the main air pollutants belong to the nitrogen oxides family (NOx). Thus, we wanted to see the relation between this gas concentration and the other ones. A linear regression was run between the NOx concentration and the other gases. 
+
+```{r, echo=FALSE}
+reg<-lm(daily_data$PT08.S3.NOx.~+daily_data$PT08.S1.CO.+daily_data$PT08.S2.NMHC.+daily_data$PT08.S4.NO2.+daily_data$PT08.S5.O3.+daily_data$T+daily_data$RH+daily_data$AH)
+```
+
+
+```{r}
+summary(reg)
+```
+
+We will build the NOx concentration a time series beacause it comes from sensor measurements, thus noise will be modeled accordingly. Since it is linearly related to the other gases (except for the temperature, relative humidity and absolute humidity that we will exclude from our study), we preferred to focus on the NOx model. 
 
 \subsection{2) Data preprocessing}
+
+We count one PT08.S3.NOX observation per day for 341 days. We suppose that our time series follows an additive model :
+$$
+D_t = S_t + T_t +  X_t 
+$$
+Where 
+$$
+(S_t)_t \ the\ seasonality\  ,(T_t)_t\ the\ trend\ and\ (X_t)_t \ is\ assumed\ to\ be\ stationary  
+$$
+
+We obtain this representation : 
+
+
+```{r, echo=FALSE}
+ts_PT08.S3.NOx. = ts(daily_data$PT08.S3.NOx., start=1, frequency = 1)
+plot(ts_PT08.S3.NOx., col="violetred2", ylab="Daily NOx Concentration" )
+```
+
+Before building any model, we have to stationarise it first by removing the seasonal and trend components.
+
+$$
+X_t = D_t - T_t - S_t
+$$
+
+So we use differencing : 
+
+$$
+D_t - D_{t-1}
+$$
+
+```{r, echo=FALSE}
+ts_stat_PT08.S3.NOx. = diff(ts_PT08.S3.NOx.)
+plot(ts_stat_PT08.S3.NOx., col='blue', ylab='')
+```
+
+We want to make sure of the stationarity of our series, so we use the Augmented Dickey-Fuller Test that tests the null hypothesis that a unit root is present in a time series sample.
+
+We obtain these results : 
+
+```{r, echo=FALSE}
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S3.NOx.)
+print(test_stationnarity)
+```
+
+Since our p-value is smalled than 0.01, we reject the null hypothesis with level of confidence of 99%
 
 \section{II)-Model fitting on the time series of interest}
 
