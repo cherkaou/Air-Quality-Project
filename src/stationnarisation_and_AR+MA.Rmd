@@ -40,16 +40,29 @@ test_stationnarity = adf.test(ts_stat_PT08.S3.NOx.)
 print(test_stationnarity)
 ```
 
+```{r}
+#On enlève les 10 dernières données 
+ts_stat_PT08.S3.NOx._train_set = ts_stat_PT08.S3.NOx.[1:(length(ts_stat_PT08.S3.NOx.)-10 )]
+length(ts_stat_PT08.S3.NOx._train_set)
+```
 
 ```{r}
 #On trace la fonction acf pour avoir une idée sur le modèles MA
-acf(ts_stat_PT08.S3.NOx., main = "ACF")
+acf(ts_stat_PT08.S3.NOx._train_set, main = "ACF")
 ```
 
 
 
 ```{r}
 #On trace la fonction acf pour avoir une idée sur le modèles AR
-pacf(ts_stat_PT08.S3.NOx., main = "PACF")
+pacf(ts_stat_PT08.S3.NOx._train_set, main = "PACF")
+```
+```{r}
+#AR(5) model
+fit_ar_model = arima(ts_stat_PT08.S3.NOx._train_set,order=c(5,0,0), include.mean = FALSE)
+fit_ar_model
+```
+```{r}
+tsdiag(fit_ar_model)
 ```
 
