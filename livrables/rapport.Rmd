@@ -11,11 +11,6 @@ date : "`r format(Sys.time(), '%d %B, %Y')`"
 
 Our project consists of time series analysis using R programming language. Our data set contains the responses of a gas mutisensor device deployed on the field in an Italian city, in a significantly polluted area, at road level. The data set contains 9358 instances of hourly averaged responses from an array of 5 metal oxide chemical sensors embedded in an Air Quality Chemical Multisensor Device. Data were recorded from March 2004 to February 2005. 
 
-```{r, echo=FALSE}
-library(Amelia)
-library(data.table)
-```
-
 
 ```{r, echo=FALSE}
 #Spécifier le chemin du fichier .csv 
@@ -51,9 +46,13 @@ str(data)
 \subsection{1) Data cleaning}
 As we can see in the str(dim) output, our data contains missing values, some are directly reported as NA and others have been assigned to -200. It also contains a certain number of numeric variables that are characters which makes it not directly exploitable and some numbers have commas within them. For all these reasons, we had to clean our data set first so that we can exploit it afterwards.
 
-```{r}
+```{r, echo=FALSE}
+library(Amelia)
+library(data.table)
 missmap(data, main = "Missing values vs observed")
 ```
+
+
 We remove X1 and X beacause they have no data within them, also we compute the necessary changes so that our data is exploitable afterwards.
 
 ```{r, echo=FALSE}
@@ -72,7 +71,7 @@ data$RH = as.numeric(sub(",", ".", data$RH))
 data$AH = as.numeric(sub(",", ".", data$AH))
 ```
 
-We noticed that NHMC contains a lot of -200 values, so we prefered to deleted along with all the lines that contain -200. 
+We noticed that NHMC contains a lot of -200 values, so we prefered to delet it along with all the lines that contain -200. 
 ```{r}
 summary(data$NMHC.GT.)
 ```
@@ -101,13 +100,16 @@ daily_data$Date = as.Date(daily_data$Date,format="%Y-%m-%d" )
 ```
 
 We obtain 341 observations of 13 variables.
+
 ```{r}
 str(daily_data)
 ```
 ```{r}
 missmap(daily_data, main = "Missing values vs observed")
 ```
+
 Since our data is all observed now, we can start plotting it to visualize what our data set looks like. 
+
 
 ```{r, echo=FALSE}
 par(mfrow=c(2,2))
@@ -137,7 +139,7 @@ reg<-lm(daily_data$PT08.S3.NOx.~+daily_data$PT08.S1.CO.+daily_data$PT08.S2.NMHC.
 summary(reg)
 ```
 
-We will build the NOx concentration a time series beacause it comes from sensor measurements, thus noise will be modeled accordingly. Since it is linearly related to the other gases (except for the temperature, relative humidity and absolute humidity that we will exclude from our study), we preferred to focus on the NOx model. 
+We will build the NOx concentration as a time series beacause it comes from sensor measurements, thus noise will be modeled accordingly. Since it is linearly related to the other gases (except for the temperature, relative humidity and absolute humidity that we will exclude from our study). We will focus on the NOx model. 
 
 \subsection{2) Data preprocessing}
 
@@ -145,10 +147,8 @@ We count one PT08.S3.NOX observation per day for 341 days. We suppose that our t
 $$
 D_t = S_t + T_t +  X_t 
 $$
-Where 
-$$
-(S_t)_t \ the\ seasonality\  ,(T_t)_t\ the\ trend\ and\ (X_t)_t \ is\ assumed\ to\ be\ stationary  
-$$
+Where $(S_t)_t$ is the seasonality, $(T_t)_t$ the trend and $(X_t)_t$  is assumed to be stationary.
+
 
 We obtain this representation : 
 
@@ -189,10 +189,98 @@ Since our p-value is smalled than 0.01, we reject the null hypothesis with level
 
 \section{II)-Model fitting on the time series of interest}
 
+In order to test different models, we take out the last 10 most recent data that will be used for testing, the other observations will be used for the training. 
+
+```{r, echo=FALSE}
+ts_stat_PT08.S3.NOx._train_set = ts_stat_PT08.S3.NOx.[1:(length(ts_stat_PT08.S3.NOx.)-10 )]
+```
+
+Let $(X_t)_t$ be a centered second order stationary process. For $h \in Z$ , we define : 
+
+* The autocovariance function : 
+
+$$
+\gamma_{_X}(h) = Cov(X_t, X_{t+h}) = Cov(X_0, X_h) = E[X_0X_h]
+$$
+
+* The autorrelation function (ACF): 
+
+$$
+\rho_{_X}(h) = \rho(X_t, X_{t+h}) = \frac{\gamma_{_X}(h)}{\gamma_{_X}(0)}
+$$
+
+* The partial autocorrelation function (PACF):
+
+$$
+\tilde{\rho}_{_X}(h) = \rho_{_X}(X_0 - \pi_{h-1}(X_0), X_h - \pi_{h-1}(X_h))
+$$
+with the convention $\pi_0(X_1) = 0$ where $\pi_{h-1}(X_0)$ is the projection of $X_0$ on the linear span of $(X_1,X_2,....,X_{h-1})$ 
+
 \subsection{1) MA model}
+
+A MA(q) process, with $q \in N$, is a solution to the equation : 
+$$
+X_t = Z_t + \gamma_1Z_{t-1} + ... + \gamma_qZ_{t-q}
+$$
+with $t \in Z$ and $(Z_{t})_t$ a white noise. 
+
+In order to find q, we use this MA(q) property : 
+$$
+\gamma_{_X}(h) = 0 \ \forall h \ge p
+$$
+
+We choose the q parameter accordingly to the last lag in the acf that is significantly non-null, outside the blue confident band.
+
+```{r, echo=FALSE}
+acf(ts_stat_PT08.S3.NOx._train_set, main = "ACF")
+```
+
+We notice that we can not fit our data into a MA model, which is quite unexpected, because the data comes from sensor measurements so we have expected a strong noise presence. Thus, we will try other models.
 
 \subsection{2) AR model}
 
+A second model is the AR(p).
+
+An AR(p) process, with $p \in N$, is a solution of the equation : 
+
+$$
+X_t = \phi_{1}X_{t-1} + \phi_{2}X_{t-2} + ... + \phi_{p}X_{t-p} + Z_{t} 
+$$
+
+We will use a pacf AR(p) proprety, equivalent to the acf MA(q) property : 
+
+$$
+\tilde{\rho}_{_X}(h) = 0 \ \forall h>p 
+$$
+We obtain this pacf plot : 
+
+```{r, echo=FALSE}
+pacf(ts_stat_PT08.S3.NOx._train_set, main = "PACF")
+```
+
+The PACF plot indicates a significant value at lag 5. Thus, we choose an AR(5) model.
+
+```{r, echo=FALSE}
+fit_ar_model = arima(ts_stat_PT08.S3.NOx._train_set,order=c(5,0,0), include.mean = FALSE)
+fit_ar_model
+```
+
+So we have : 
+
+$$
+X_t = -0.2842X_{t-1}-0.3523X_{t-2}-0.3167X_{t-3}-0.2801X_{t-4}-0.1998X_{t-5}
+$$
+
+Now we check that the residuals are likely white noise.
+
+```{r, echo=FALSE}
+tsdiag(fit_ar_model)
+```
+
+The ACF plot of residuals show no significant lags, so the AR(5) is likely a good representation of the series. 
+Also, the p-values for Ljung-Box statistic are all greater than 0.05, so we cannot reject the
+hypothesis that the autocorrelation is different from 0. Therefore, the AR(5) model is an
+appropriate one.
 
 \subsection{3) ARMA model}
 
