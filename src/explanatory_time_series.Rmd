@@ -26,6 +26,7 @@ ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
 
 ```
 
+
 ```{r}
 #On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
 library(tseries)
@@ -51,5 +52,32 @@ ggplot(data=daily_data, aes(x=Date, y=PT08.S1.CO._stat)) + geom_line()
 #On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
 library(tseries)
 test_stationnarity = adf.test(ts_stat_PT08.S1.CO.)
+print(test_stationnarity)
+```
+```{r}
+#On stationnarise la série
+ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency =1)
+ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
+daily_data$PT08.S2.NMHC._stat <- c(0,diff(daily_data$PT08.S2.NMHC.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
+
+```
+```{r}
+#On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S2.NMHC.)
+print(test_stationnarity)
+```
+```{r}
+#On stationnarise la série
+ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency =1)
+ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
+daily_data$PT08.S5.O3._stat <- c(0,diff(daily_data$PT08.S5.O3.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S5.O3._stat)) + geom_line()
+```
+```{r}
+#On teste la stationnarité en utilisant le test de Dicky-Fuller : H0 correspond à l'hypothèse de non stationnarité : présence d'une racine unitaire dans l'équation canonique de la série, ici la p-value est 0.01 donc on rejette H0 , la série est bien stationnaire
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S5.O3.)
 print(test_stationnarity)
 ```
