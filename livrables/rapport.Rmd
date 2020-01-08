@@ -1,35 +1,76 @@
 ---
-title: "Rapport"
+title: "Air quality project : Time Series Analysis"
+author : Yousra Cherkaoui Tangi - Lou Peltier - Guilhem Bois
 output: pdf_document
+date : "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
-## Preliminary 
+\tableofcontents
+\newpage
+\section{Preliminary }
 
-## I) Prepocessing 
+Our project consists of time series analysis using R programming language. Our data set contains the responses of a gas mutisensor device deployed on the field in an Italian city, in a significantly polluted area, at road level. The data set contains 9358 instances of hourly averaged responses from an array of 5 metal oxide chemical sensors embedded in an Air Quality Chemical Multisensor Device. Data were recorded from March 2004 to February 2005. 
 
-## II) Model fitting on the time series of interest
+```{r, echo=FALSE}
+#Spécifier le chemin du fichier .csv 
+fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
+data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
+```
 
-### 1) MA model : 
 
-### 2) AR model : 
+```{r}
+dim(data)
+str(data)
+```
+| Attribute 	    	|Description                                                                                           |
+|:-----------------:|:---------------------------------------------------------------------------------------------------- |    
+| Date 		          | Date (DD/MM/YYYY)                                                                                    |
+| Time 		          | Time (HH.MM.SS)                                                                                      |
+| CO(GT) 		        | True hourly averaged concentration CO in mg/m^3 (reference analyzer)                                 |
+| PT08.S1(CO)     	| PT08.S1 (tin oxide) hourly averaged sensor response (nominally CO targeted)                          |
+| NMHC(GT) 		      | True hourly averaged overall Non Metanic Hydro Carbons concentration in microg/m^3(reference analyzer |
+| C6H6(GT) 		      | True hourly averaged Benzene concentration in microg/m^3 (reference analyzer)                        |
+| PT08.S2(NMHC)     | PT08.S2 (titania) hourly averaged sensor response (nominally NMHC targeted)                          |
+| NOx(GT) 		      | True hourly averaged NOx concentration in ppb (reference analyzer)                                   |
+| PT08.S3(NOx)    	| PT08.S3 (tungsten oxide) hourly averaged sensor response (nominally NOx targeted)                    |
+| NO2(GT) 		      | True hourly averaged NO2 concentration in microg/m^3 (reference analyzer)                            |
+| PT08.S4(NO2)    	| PT08.S4 (tungsten oxide) hourly averaged sensor response (nominally NO2 targeted)                    |
+| PT08.S5(O3)     	| PT08.S5 (indium oxide) hourly averaged sensor response (nominally O3 targeted)                       |
+| T 		            | Temperature in °C                                                                                   |
+| RH 		            | Relative Humidity (%)                                                                                |
+| AH 		            | AH Absolute Humidity                                                                                 |
+ 		
+
+\section{I)-Cleaning and preprocessing}
+As we can see in the str(dim) output, our data contains a certain number of variables that are of character type which make it not directly exploitable, also some numbers
+
+\subsection{1) Data cleaning}s
+
+\subsection{2) Data preprocessing}
+
+\section{II)-Model fitting on the time series of interest}
+
+\subsection{1) MA model}
+
+\subsection{2) AR model}
 
 
-### 3) ARMA model : 
+\subsection{3) ARMA model}
 
-### 4) Residuals : 
+\subsection{4) Residuals} 
 
-### 5) GARCH model : 
+\subsection{5) GARCH model}
 
-### 6) Prediction intervals for the 10 most recent data : 
+\subsection{6) Prediction intervals for the 10 most recent data}
 
-## III) Training on the times series of interest using explanatory times series
+\section{III)-Training on the times series of interest using explanatory times series}
 
-### 1) Preprocessing : 
+\subsection{1) Preprocessing}
 
-### 2) Time varying coefficients : 
+\subsection{2) Time varying coefficients}
 
-### 3) QLIK : 
+\subsection{3) QLIK}
 
-### 4) Prediction
+\subsection{4) Prediction}
 
-## IV) Conclusion
+\section{IV) Conclusion}
