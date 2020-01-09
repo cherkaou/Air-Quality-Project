@@ -292,7 +292,14 @@ appropriate one.
 
 \section{III)-Training on the times series of interest using explanatory times series}
 
+Yet, we will introduce other components, that we didn'tuse in the models previously. We do it in order to find better predictions and better confidence intervals.
+
 \subsection{1) Preprocessing}
+
+First, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
+We do it for each component with a name starting with PT.
+
+To be sure that everything is fine, we use the Augmented Dickey-Fuller Test.
 
 \subsection{2) Time varying coefficients}
 

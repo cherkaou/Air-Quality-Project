@@ -89,10 +89,13 @@ n<-length(ts_stat_PTO8.S3.NOx.)
 y<-ts(ts_stat_PTO8.S3.NOx. ,frequency = 4, start = c(1959,2))
 ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
 
-FIRST <- diff(daily_data$PT08.S5.O3.)
-SECOND <- diff(daily_data$PT08.S1.CO.)
-THIRD <- diff(daily_data$PT08.S2.NMHC.)
-
+#FIRST <- diff(daily_data$PT08.S5.O3.)
+#SECOND <- diff(daily_data$PT08.S1.CO.)
+#THIRD <- diff(daily_data$PT08.S2.NMHC.)
+#FOURTH <- diff(daily_data$PT08.S4.NO2.)
+ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
+ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
+FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-10 ):length(ts_stat_PT08.S5.O3.)]
 
 Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
 Y <- Y[-c(1:10),]
@@ -100,9 +103,13 @@ tail(Y)   # NA for the lagged versions at the end because we do not know the fut
 
 ```
 ```{r}
-model <- SSModel(Y[-c(1:5,(n+1):(n+5)),] ~-1+ SSMregression(~ FIRST[-c((n-4):(n+1))]+
-  SECOND[-c((n-4):(n+1))]+ THIRD[-c((n-4):(n+1))], Q=diag(NA,4),R=t(matrix(rep(diag(1,4),5),nrow=4))), H=diag(1,5))
+print(class(data))
+H <- diag(1,5)
+#model <- SSModel(Y[,-1] ~-1+ SSMregression(~ FIRST[-c((n-4):(n+1))]+ SECOND[-c((n-4):(n+1))]+ THIRD[-c((n-4):(n+1))] + FOURTH[-c((n-4):(n+1))], Q=diag(NA,4),R=t(matrix(rep(diag(1,4),5),nrow=4))), H)
+model <- SSModel(Y[,-1] ~-1+ SSMregression(~ FIRST, Q=diag(NA,4),R=t(matrix(rep(diag(1,4),5),nrow=4))), H)
 
+```
+```{r}
 # warnings because missing value in SUR but KF is robust (see below)
 
 fit <- fitSSM(model, inits = c(0.1,0.1,0.1,0.1), method = "BFGS")
