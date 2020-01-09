@@ -303,6 +303,10 @@ To be sure that everything is fine, we use the Augmented Dickey-Fuller Test.
 
 \subsection{2) Time varying coefficients}
 
+Now we want to build a dynamical model thanks to the explanatory time series. We know that the order of the AR model was 5, so we will use 5 past values of the time series of interest for predicting the present value of the time series of interest too.
+
+We use the SSModel function :
+
 \subsection{3) QLIK}
 
 \subsection{4) Prediction}
