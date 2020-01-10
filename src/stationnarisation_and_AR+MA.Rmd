@@ -208,5 +208,17 @@ t.value=beta/se
 p.value=2*pnorm(-t.value)
 
 print(p.value)
+#ERREUR CAR TOUTES LES COMPOSANTES DE LA MATRICE VAR SONT NULLES
+```
+
+```{r}
+#Test alpha=0
+
+alpha=par[2]
+sigmaalpha=fitgarch$var[2,2]
+se=sqrt(sigmaalpha)/sqrt(T)
+t.value=alpha/se
+p.value=2*pnorm(-t.value)
+print(p.value)
 
 ```
