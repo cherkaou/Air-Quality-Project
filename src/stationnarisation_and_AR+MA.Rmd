@@ -195,7 +195,10 @@ res<-fitgarch$residus
 qqnorm(res)
 qqline(res,col=2)
 acf(res^2)
-  
+
+fitgarch_bis<-garchFit(~garch(1,1),ts_stat_PT08.S3.NOx._train_set)
+coef(fitgarch_bis)
+fitgarch_bis
 ```
 
 ```{r}
@@ -219,6 +222,7 @@ sigmaalpha=fitgarch$var[2,2]
 se=sqrt(sigmaalpha)/sqrt(T)
 t.value=alpha/se
 p.value=2*pnorm(-t.value)
+
 print(p.value)
 
 ```
