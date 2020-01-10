@@ -320,9 +320,12 @@ Let's explain why we use this : by contrast with the AR models, it is much more 
 One way to solve the problem is to consider ARMA model as a more general linear model called state space models. Those models have been introduced in signal processing and the best linear prediction can be computed recursively by the Kalman’s recursion.
 How does this work ?
 A state space linear model of dimension r with constant coeﬃcient is given by a system of space euqation and state equations of the form : X_t = Transpose(G)Y_t +Z_T
-                         Y_t = FY_(t−1) +V_t
-which are respectively the Space equation and the State equation, where (Z_t) and (V_t) are uncorrelated white noise with variance R and Q, G ∈ Rr, F ∈ M(r,r) and Y ∈ Rr is the random state of the system. The Kalman theorem says : In a state-space model with constant coeﬃcients, if ˆ Y_0 and Ω_0 are well-chosen, one can compute recursively ˆ X_n = Π_(n−1)(X_n), RL n = E[(X_n − ˆ (X_n))2], ˆ Y_n = Π_(n−1)(Y_n) and Ω_n = E[(Y_n − ˆ Y_n)(Y_n − ˆ Y_n)T] by the following recursion :
-ˆ Y_(n+1) = F ˆ Y_n + FΩ_nG RL n (X_n −GT ˆ Y_n) ˆ X_(n+1) = GT ˆ Y_(n+1) Ω_(n+1) = FΩ_nFT +Q− FΩ_nG RL n GTΩ_nFT RL n+1 = GTΩ_(n+1)G+R
+                         Y_t = FY_{t−1} +V_t
+which are respectively the Space equation and the State equation, where (Z_t) and (V_t) are uncorrelated white noise with variance R and Q, G ∈ Rr, F ∈ M(r,r) and Y ∈ Rr is the random state of the system. The Kalman theorem says : In a state-space model with constant coeﬃcients, if \widehat{Y_0} and Ω_0 are well-chosen, one can compute recursively \widehat{X_n} = Π_{n−1}(X_n), RL n = E[(X_n − \widehat{X_n})2], \widehat{Y_n} = Π_{n−1}(Y_n) and Ω_n = E[(Y_n − \widehat{Y_n})(Y_n − \widehat{Y_n}T] by the following recursion :
+\widehat{Y_{n+1}} = F\widehat{Y_n} + (X_n −GT\widehat{Y_n})*FΩ_nG/(R_n)
+\widehat{X_{n+1}} = transpose(G)*\widehat{Y_{n+1}}
+Ω_{n+1} = FΩ_nF*transpose(F) +Q− FΩ_nG*transpose(G)*Ω_n*transpose(F)/R_n
+R_{n+1} = GTΩ_{n+1}G+R
 
 The Kalman’s recursion has several advantages :
 - It is a recursve procedures
