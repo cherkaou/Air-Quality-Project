@@ -206,6 +206,7 @@ sigmabeta=fitgarch$var[3,3]
 se=sqrt(sigmabeta)/sqrt(T)
 t.value=beta/se
 p.value=2*pnorm(-t.value)
+
 print(p.value)
 
 ```
