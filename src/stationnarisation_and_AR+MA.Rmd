@@ -45,17 +45,28 @@ print(test_stationnarity)
 ts_stat_PT08.S3.NOx._train_set = ts_stat_PT08.S3.NOx.[1:(length(ts_stat_PT08.S3.NOx.)-10 )]
 length(ts_stat_PT08.S3.NOx._train_set)
 ```
+```{r}
+ts_stat_PT08.S3.NOx._train_set=ts(ts_stat_PT08.S3.NOx._train_set,start=1,frequency = 1)
+```
 
 ```{r}
 #On trace la fonction acf pour avoir une idée sur le modèles MA
-acf(ts_stat_PT08.S3.NOx._train_set, main = "ACF")
+acf(ts_stat_PT08.S3.NOx._train_set, main = "ACF",lag=20)
 ```
 
+```{r}
+#MA(2) model
+fit_ma_model = arima(ts_stat_PT08.S3.NOx._train_set,order=c(0,0,2),include.mean=FALSE)
+fit_ma_model
+```
+```{r}
+tsdiag(fit_ma_model)
+```
 
 
 ```{r}
 #On trace la fonction acf pour avoir une idée sur le modèles AR
-pacf(ts_stat_PT08.S3.NOx._train_set, main = "PACF")
+pacf(ts_stat_PT08.S3.NOx._train_set, main = "PACF",lag=20)
 ```
 ```{r}
 #AR(5) model
@@ -64,5 +75,77 @@ fit_ar_model
 ```
 ```{r}
 tsdiag(fit_ar_model)
+```
+
+```{r}
+AIC=matrix(0,ncol = 5,nrow=5)
+
+for (i in 1:5){
+  for (j in 1:5){
+    AIC[i,j]=arima(ts_stat_PT08.S3.NOx._train_set,order=c(i,0,j),include.mean=FALSE)$aic
+  }
+}
+
+colnames(AIC)<-c("MA1","MA2","MA3","MA4","MA5")
+rownames(AIC)<-c("AR1","AR2","AR3","AR4","AR5")
+
+AIC
+```
+Le min d'AIC est atteint pour le model ARMA(2,1)
+
+```{r}
+fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(2,0,1),include.mean = FALSE)
+fit_arma_model
+```
+
+```{r}
+tsdiag(fit_arma_model)
+```
+
+```{r}
+#Model Selection
+AIC(fit_ma_model,fit_ar_model,fit_arma_model)
+BIC(fit_ma_model,fit_ar_model,fit_arma_model)
+```
+Les crit�res AIC et BIC sont les plus petits avec le mod�le ARMA
+
+```{r}
+#Residuals
+epsilon<-ts(fit_arma_model$residuals,frequency=1,start=1)
+plot.ts(epsilon)
+
+par(mfrow=c(1,1))
+acf(epsilon,lag=100)
+qqnorm(epsilon)
+qqline(epsilon,col=2)
+
+par(mfrow=c(1,2))
+acf(epsilon,lag=100)
+acf(epsilon^2,lag=100)
+
+
+```
+
+```{r}
+#GARCH Model
+library(fGarch)
+library(xts)
+library(astsa)
+
+objf.garch <- function(vartheta,epsilon,n,sig2init,petit=sqrt(.Machine$double.eps),r0=10){
+  omega<-vartheta[1]
+  alpha<-vartheta[2]
+  beta<-vartheta[3]
+  sig2<-rep(0,n)
+  sig2[1]<-sig2init
+  for(t in 2:n){
+    sig2[t]<-omega+alpha*epsilon[t-1]^2+beta*sig2[t-1]
+  }
+  qml<-mean(epsilon[(r0+1):n]^2/sig2[(r0+1):n]+log(sig2[(r0+1):n]))
+  qml
+}
+
+
+
 ```
 
