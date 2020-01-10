@@ -309,6 +309,10 @@ We use the SSModel function :
 
 \subsection{3) QLIK}
 
+We have our model so we can use it with a QFAS in order to tune the hyperparameter.
+
 \subsection{4) Prediction}
+
+We have everything yet in order to do the prediction. The intervals of prediction can indeed be produced thanks to the use of the Kalman’s recursion on the tuned dynamical model.
 
 \section{IV) Conclusion}
