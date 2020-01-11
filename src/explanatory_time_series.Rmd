@@ -120,7 +120,7 @@ H = as.data.frame(H)
 #model <- SSModel(Y[-1,] ~-1+ SSMregression(~ FIRST[-c((n-4):(n+1))]+ SECOND[-c((n-4):(n+1))]+ THIRD[-c((n-4):(n+1))] + FOURTH[-c((n-4):(n+1))], Q=diag(NA,4),R=t(matrix(rep(diag(1,4),5),nrow=4))), H)
 SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H)
 
-model <- SSModel(Y[(n-13):n] ~ -1+ SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H))
+model <- SSModel(Y[(n-5):(n-1),1] ~ -1+ SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H))
 #R=t(matrix(rep(diag(1,4),5),nrow=5)))
 ```
 ```{r}
@@ -133,4 +133,50 @@ model$Q    # third coeffcient constant?
 model$H    # reduced version of the QLIK
 kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
 
+```
+```{r}
+# the parameters for the 1 step prediction
+plot.ts(kal$a[6:10] )  # third coefficient constant = 0?
+
+
+```
+```{r}
+plot.ts(kal$a[3+4*(0:9)] ) # Seems to be useless for all lags. We should remove it to reduce the dimension of the space.
+```
+```{r}
+# the parameters for the 1 step prediction
+plot.ts(kal$a[,1:4] )
+```
+```{r}
+# the variances estimation as mean square errors for 10 lags
+sigma <- colMeans((kal$m-Y[(n-5):(n-1),1])^2,na.rm = TRUE)   # remove a burn-in period to estimate the variances
+plot(sigma)
+
+```
+```{r}
+# the predictions in sample
+yhat<-ts(kal$m[,1],frequency = 4, start = c(1959,2))
+ts.plot(yhat)
+
+```
+```{r}
+# the estimation of the volatility, i.e. the condiitonal variance of the 1-step prediction
+
+vol<-ts(kal$F[1,]-rep(1,n-10)+rep(sigma[1],n-10),frequency = 4, start = c(1959,2))
+ts.plot(vol)
+```
+```{r}
+kalman_frame <- data.frame(kal_unit <- as.vector(kal$a[,1]),
+                           kal_hum <- as.vector(kal$a[,2]),
+                           kal_wind <- as.vector(kal$a[,3]),
+                           kal_temp <- as.vector(kal$a[,4]),
+                           kal_count <- as.vector(kal$a[,5]),
+                           time <- daily_data$Date[1:(n-1)])
+
+# The parameters for the 1 step prediction
+ggplot(data=kalman_frame, aes(x=Date, y=kal_unit)) + geom_line()
+ggplot(data=kalman_frame, aes(x=Date, y=kal_hum)) + geom_line()
+ggplot(data=kalman_frame, aes(x=Date, y=kal_wind)) + geom_line()
+ggplot(data=kalman_frame, aes(x=Date, y=kal_temp)) + geom_line()
+ggplot(data=kalman_frame, aes(x=Date, y=kal_count)) + geom_line()
 ```
