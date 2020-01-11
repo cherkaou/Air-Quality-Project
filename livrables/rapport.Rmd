@@ -303,8 +303,8 @@ First, we have to stationarise our data with the same method as before. This mea
 library(data.table)
 #On choisit le fichier qui contient les données
 
-fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/src/cleaningData_bis.R"
-source(fic)
+path = file.choose()
+source(path)
 ```
 
 
