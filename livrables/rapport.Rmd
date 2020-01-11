@@ -298,15 +298,130 @@ Yet, we will introduce other components, that we didn'tuse in the models previou
 \subsection{1) Preprocessing}
 
 First, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
+
+```{r}
+rm(list = ls())
+#Choisir l'emplacement des données
+path = file.choose()
+source(path)
+
+
+library(KFAS)
+ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
+
+```
+
+We see indeed that this data need to be stationarised
+
+```{r}
+#we stationarise the dataset
+ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency =1)
+ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
+daily_data$PT08.S4.NO2._stat <- c(0,diff(daily_data$PT08.S4.NO2.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
+```
+
+As before, we apply the Augmented Dickey-Fuller Test
+
+```{r}
+#We test the stationarity thanks to a Dicky-Fuller test : H0 is the hypothesis of non stationnarity. Here, the p-value is 0.01 so we reject H0 , the serie is stationary.
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S4.NO2.)
+print(test_stationnarity)
+```
+
 We do it for each component with a name starting with PT.
 
 To be sure that everything is fine, we use the Augmented Dickey-Fuller Test.
+
+Here are the results for each component.
+
+```{r}
+ggplot(daily_data,  aes(x=Date, y=PT08.S1.CO.)) + geom_line()
+```
+
+```{r}
+#We stationarise the serie
+ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency =1)
+ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
+daily_data$PT08.S1.CO._stat <- c(0,diff(daily_data$PT08.S1.CO.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S1.CO._stat)) + geom_line()
+```
+
+
+```{r}
+##We test the stationarity thanks to a Dicky-Fuller test : H0 is the hypothesis of non stationnarity. Here, the p-value is 0.01 so we reject H0 , the serie is stationary.
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S1.CO.)
+print(test_stationnarity)
+```
+```{r}
+#We stationarise the serie
+ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency =1)
+ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
+daily_data$PT08.S2.NMHC._stat <- c(0,diff(daily_data$PT08.S2.NMHC.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
+
+```
+```{r}
+##We test the stationarity thanks to a Dicky-Fuller test : H0 is the hypothesis of non stationnarity. Here, the p-value is 0.01 so we reject H0 , the serie is stationary.
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S2.NMHC.)
+print(test_stationnarity)
+```
+```{r}
+#We stationarise the serie
+ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency =1)
+ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
+daily_data$PT08.S5.O3._stat <- c(0,diff(daily_data$PT08.S5.O3.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S5.O3._stat)) + geom_line()
+```
+```{r}
+##We test the stationarity thanks to a Dicky-Fuller test : H0 is the hypothesis of non stationnarity. Here, the p-value is 0.01 so we reject H0 , the serie is stationary.
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S5.O3.)
+print(test_stationnarity)
+```
 
 \subsection{2) Time varying coefficients}
 
 Now we want to build a dynamical model thanks to the explanatory time series. We know that the order of the AR model was 5, so we will use 5 past values of the time series of interest for predicting the present value of the time series of interest too.
 
-We use the SSModel function :
+```{r}
+#now that we have stationarized, we can create the model
+ts_PTO8.S3.NOx. = ts(daily_data$PT08.S3.NOx., start=1, frequency = 1)
+ts_stat_PTO8.S3.NOx. = diff(ts_PTO8.S3.NOx.)
+n<-length(ts_stat_PTO8.S3.NOx.)
+y<-ts(ts_stat_PTO8.S3.NOx. ,frequency = 4, start = c(1959,2))
+ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
+
+#FIRST <- diff(daily_data$PT08.S5.O3.)
+#SECOND <- diff(daily_data$PT08.S1.CO.)
+#THIRD <- diff(daily_data$PT08.S2.NMHC.)
+#FOURTH <- diff(daily_data$PT08.S4.NO2.)
+ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
+ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
+FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
+
+ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
+ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
+SECOND = ts_stat_PT08.S1.CO.[(length(ts_stat_PT08.S1.CO.)-4 ):length(ts_stat_PT08.S1.CO.)]
+
+ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency = 1)
+ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
+THIRD = ts_stat_PT08.S2.NMHC.[(length(ts_stat_PT08.S2.NMHC.)-4 ):length(ts_stat_PT08.S2.NMHC.)]
+
+ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency = 1)
+ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
+FOURTH = ts_stat_PT08.S4.NO2.[(length(ts_stat_PT08.S4.NO2.)-4 ):length(ts_stat_PT08.S4.NO2.)]
+
+Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
+Y <- Y[-c(1:5),]
+tail(Y)   # NA for the lagged versions at the end because we do not know the future!
+```
+
+We use the SSModel function. Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
+
 
 \subsection{3) QLIK}
 
