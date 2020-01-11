@@ -14,7 +14,8 @@ Our project consists of time series analysis using R programming language. Our d
 
 ```{r, echo=FALSE}
 #Spécifier le chemin du fichier .csv 
-fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
+#fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
+fic = "/Users/Acer/IdeaProjects/Air-Quality-Project/data/AirQualityUCI.csv"
 data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
 ```
 
