@@ -180,3 +180,14 @@ ggplot(data=kalman_frame, aes(x=Date, y=kal_wind)) + geom_line()
 ggplot(data=kalman_frame, aes(x=Date, y=kal_temp)) + geom_line()
 ggplot(data=kalman_frame, aes(x=Date, y=kal_count)) + geom_line()
 ```
+```{r}
+# intervals of predictions in sample
+upperCI<-ts(yhat+2*sqrt(vol),frequency = 4, start = c(1959,2))
+lowerCI<-ts(yhat-2*sqrt(vol),frequency = 4, start = c(1959,2))
+ts.plot(ytraining,yhat,upperCI,lowerCI,col=1:4)
+ts.plot(ts(cbind(ytraining[-(1:10)],yhat[-(1:10)],upperCI[-(1:10)],lowerCI[-(1:10)])),col=1:4)
+# Prediction out of sample
+ypred<-kal$m[n-10,]  # here we use different lags
+volpred<-kal$F[,n-10]-rep(1,10)+sigma # here we use the variances for different lags
+ts.plot(cbind(Y[(n-10):(n-1)],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
+```
