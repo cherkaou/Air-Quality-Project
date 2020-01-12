@@ -340,6 +340,54 @@ Moreover, the p-values of the Ljung-Box statistic test are all much greater than
 
 \subsection{4) Residuals}
 
+We have fitted two models, and then e have to choose between these two models. In order to make this choice, we will look at two information criterions : the AIC previously used and the BIC a cirterion similar to the AIC but with a different penalty for the numbers of parameters.
+
+```{r, echo=FALSE}
+#Model Selection
+AIC(fit_ar_model,fit_arma_model)
+BIC(fit_ar_model,fit_arma_model)
+```
+
+The smallest AIC and the smallest BIC are bith given for the ARMA(5,5) model, so we are going to choose this one for the rest of the project.
+
+We want to check the normality of the residuals.
+We begin our analysis by plotting the residuals and the suqarred residuals :
+
+```{r, echo=FALSE}
+#Residuals
+eps<-ts(fit_arma_model$residuals,frequency=1,start=1)
+par(mfrow=c(2,1))
+plot.ts(eps)
+plot.ts(eps^2)
+```
+We notice an outlier at time 208 which means something unusual has may happened this day.
+
+Then we plot the ACF graphs :
+
+```{r, ehco=FALSE}
+par(mfrow=c(2,1))
+acf(eps,lag=25)
+acf(eps^2,lag=25)
+```
+These plots show us there is no autocorrelation remaining in the residuals which means that the chosen model captures the pattern in the data effectively.
+
+Finally we plot the QQ plot of the residuals to observe their behavior :
+```{r, echo=FALSE}
+par(mfrow=c(1,1))
+qqnorm(eps)
+qqline(eps,col=2)
+
+```
+By looking at this graph we can conlude that the residuals don't seem gaussian as there are too many extreme values, and thus fat tail. The relationship between sample quantiles and theoretical quantiles is not linear.
+
+We can validate our hypothesis of the non normality of the residuals by performing a Jarque-Bera test. This test verify whether sample data have the skewness and kurtosis corresponding to a normal distribution.
+
+```{r,echo=FALSE}
+jarque.bera.test(eps)
+```
+The p-value is smaller than 5% so we can reject the null hypothesis of the data normally distributed.
+
+So we can reasonably conclude that the residuals are not gaussians and so the condition of the normal distribution of the error terms is not met.
 
 
 \subsection{5) GARCH model}
