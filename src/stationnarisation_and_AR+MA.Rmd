@@ -55,16 +55,6 @@ acf(ts_stat_PT08.S3.NOx._train_set, main = "ACF",lag=20)
 ```
 
 ```{r}
-#MA(2) model
-fit_ma_model = arima(ts_stat_PT08.S3.NOx._train_set,order=c(0,0,2),include.mean=FALSE)
-fit_ma_model
-```
-```{r}
-tsdiag(fit_ma_model)
-```
-
-
-```{r}
 #On trace la fonction acf pour avoir une id√©e sur le mod√®les AR
 pacf(ts_stat_PT08.S3.NOx._train_set, main = "PACF",lag=20)
 ```
@@ -91,10 +81,10 @@ rownames(AIC)<-c("AR1","AR2","AR3","AR4","AR5")
 
 AIC
 ```
-Le min d'AIC est atteint pour le model ARMA(2,1)
+Le min d'AIC est atteint pour le model ARMA(5,5)
 
 ```{r}
-fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(2,0,1),include.mean = FALSE)
+fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(5,0,5),include.mean = FALSE)
 fit_arma_model
 ```
 
@@ -104,8 +94,8 @@ tsdiag(fit_arma_model)
 
 ```{r}
 #Model Selection
-AIC(fit_ma_model,fit_ar_model,fit_arma_model)
-BIC(fit_ma_model,fit_ar_model,fit_arma_model)
+AIC(fit_ar_model,fit_arma_model)
+BIC(fit_ar_model,fit_arma_model)
 ```
 Les critËres AIC et BIC sont les plus petits avec le modËle ARMA
 
@@ -113,15 +103,15 @@ Les critËres AIC et BIC sont les plus petits avec le modËle ARMA
 #Residuals
 eps<-ts(fit_arma_model$residuals,frequency=1,start=1)
 plot.ts(eps)
+plot.ts(eps^2)
 
 par(mfrow=c(1,1))
-acf(eps,lag=100)
 qqnorm(eps)
 qqline(eps,col=2)
 
-par(mfrow=c(1,2))
-acf(eps,lag=100)
-acf(eps^2,lag=100)
+par(mfrow=c(2,1))
+acf(eps,lag=25)
+acf(eps^2,lag=25)
 
 shapiro.test(residuals(fit_arma_model)) #les rÈsidus ne sont pas gaussiens
 jarque.bera.test(eps)
@@ -166,12 +156,15 @@ VarAsymp<- function(omega,alpha,beta,eps,sig2init,petit,r0=10){
   eta <- eta/sd(eta)
   
   J<-dersigma2[1:3,(r0+1):n]%*%t(dersigma2[1:3,(r0+1):n])/(n-r0)
-  print(J)
+  #print(J)
   kappa4<-mean(eta^4)
+  #print(kappa4)
+  #inv<-solve(J)
+  #print(inv)
+  #test<-(kappa4-1)*inv
+  #print(test)
   
   {if(kappa(J)<1/petit) inv<-solve(J) else inv<-matrix(0,nrow=3,ncol=3)}
-  print(kappa(J))
-  print(1/petit)
   var<-(kappa4-1)*inv
   list(var=var,residus=eta)
 }
@@ -208,9 +201,9 @@ qqnorm(res)
 qqline(res,col=2)
 acf(res^2)
 
-#fitgarch_bis<-garchFit(~garch(1,1),ts_stat_PT08.S3.NOx._train_set)
-#coef(fitgarch_bis)
-#fitgarch_bis
+fitgarch_bis<-garchFit(~garch(1,1),eps)
+coef(fitgarch_bis)
+fitgarch_bis
 ```
 
 ```{r}
@@ -222,8 +215,7 @@ se=sqrt(sigmabeta)/sqrt(T)
 t.value=beta/se
 p.value=2*pnorm(-t.value)
 
-print(p.value)
-#ERREUR CAR TOUTES LES COMPOSANTES DE LA MATRICE VAR SONT NULLES
+(p.value)
 ```
 
 ```{r}
@@ -238,3 +230,49 @@ p.value=2*pnorm(-t.value)
 print(p.value)
 
 ```
+
+```{r}
+#Prediction intervals
+library(rugarch)
+
+#Fit a ARMA(1,1)-GARCH(1,1) in 1 step 
+model_garch<-ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)), 
+                        mean.model = list(armaOrder = c(1, 1), include.mean = FALSE), 
+                        distribution.model = "norm")
+
+modelfit_garch<-ugarchfit(spec=model_garch,data=ts_stat_PT08.S3.NOx._train_set)
+
+forecast_garch=ugarchforecast(modelfit_garch,n.ahead = 10)@forecast
+
+#prediction interval
+lower <- ts(forecast_garch$seriesFor-1.96*forecast_garch$sigmaFor, start = 331)
+upper <- ts(forecast_garch$seriesFor+1.96*forecast_garch$sigmaFor, start = 331)
+
+```
+
+```{r}
+garch_matrix <- matrix(nrow = 10, ncol=2)
+
+for (i in 1:10){
+  garch_matrix[i,1]<-lower[i] #borne inf
+  garch_matrix[i,2]<-upper[i] #borne sup
+}
+colnames(garch_matrix)<-c("Lower bound","Upper bound")
+garch_matrix
+```
+
+```{r}
+prediction_results <- data.frame(time <- daily_data$Date[321:340],
+                  previous_values <- c(ts_stat_PT08.S3.NOx._train_set[321:330],rep(NA,10)),
+                  real_value<-c(rep(NA,10),ts_stat_PT08.S3.NOx.[331:340]),
+                  Lower_bound<-c(rep(NA,10),garch_matrix[,1]),
+                  Upper_bound<-c(rep(NA,10),garch_matrix[,2]))
+
+colnames(prediction_results)<-c("Date","Previous values","Real values","Lower_bound","Upper_bound")
+```
+
+```{r}
+library(ggplot2)
+ggplot(data=prediction_results)+geom_line(aes(x=prediction_results$Date,y=prediction_results$`Previous values`))+geom_line(aes(x=prediction_results$Date,y=prediction_results$Lower_bound),color="blue")+geom_line(aes(x=prediction_results$Date,y=prediction_results$Upper_bound),color="blue")+geom_point(aes(x=prediction_results$Date,y=prediction_results$`Real values`),color="red")+ggtitle("Interval of prediction and the real values for the next 10 periods")+ylab("Values")+xlab("Period")
+```
+
