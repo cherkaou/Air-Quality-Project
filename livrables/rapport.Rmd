@@ -380,7 +380,7 @@ acf(eps^2,lag=25)
 These plots show us there is no autocorrelation remaining in the residuals which means that the chosen model captures the pattern in the data effectively.
 
 
-Finally we plot the QQ plot of the residuals to observe their behavior :
+finally we plot the QQ plot of the residuals to observe their behavior :
 
 ```{r, echo=FALSE}
 #par(mfrow=c(1,1))
@@ -411,7 +411,7 @@ Yet, we will introduce other components, that we didn'tuse in the models previou
 
 \subsection{1) Preprocessing}
 
-First, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
+first, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
 
 ```{r}
 library(data.table)
@@ -516,13 +516,13 @@ n<-length(ts_stat_PTO8.S3.NOx.)
 y<-ts(ts_stat_PTO8.S3.NOx. ,frequency = 4, start = c(1959,2))
 ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
 
-#FIRST <- diff(daily_data$PT08.S5.O3.)
+#fiRST <- diff(daily_data$PT08.S5.O3.)
 #SECOND <- diff(daily_data$PT08.S1.CO.)
 #THIRD <- diff(daily_data$PT08.S2.NMHC.)
 #FOURTH <- diff(daily_data$PT08.S4.NO2.)
 ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
 ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
-FIRST = ts_stat_PT08.S5.O3.
+fiRST = ts_stat_PT08.S5.O3.
 
 ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
 ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
@@ -544,14 +544,14 @@ tail(Y)   # NA for the lagged versions at the end because we do not know the fut
 
 We use the SSModel function. Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
 
-```{r}
+```{r, echo=FALSE}
 print(class(data))
 H <- diag(1,10)
 H = as.data.frame(H)
 
-SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H)
+#SSMregression(~ fiRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H)
 
-model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ FIRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(1,4), H))
+model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ fiRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(1,4), H))
 
 fit <- fitSSM(model, inits = c(0.1,0.1,0.1,0.1), method = "BFGS")
 ```
@@ -570,13 +570,17 @@ kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
 # the parameters for the 1 step prediction
 plot.ts(kal$a[6:10] )
 ```
+
 We have the covariance matrix of disturbance terms that is the identity.
 So we have for each component this result :
+
 ```{r}
 # the parameters for the 1 step prediction
 plot.ts(kal$a[,1:4] )
 ```
+
 and we find the variance
+
 ```{r}
 # the variances estimation as mean square errors for 10 lags
 sigma <- colMeans((kal$m-Y[(n-5):(n-1),1])^2,na.rm = TRUE)   # remove a burn-in period to estimate the variances
@@ -625,7 +629,7 @@ However, there are also some drawbacks :
 Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
 
 ```{r}
-the predictions in sample
+#the predictions in sample
 yhat<-ts(kal$m[,1],frequency = 4, start = c(1959,2))
 ts.plot(yhat)
 ```
@@ -636,6 +640,7 @@ ts.plot(yhat)
 vol<-ts(kal$F[1,]-rep(1,n-10)+rep(sigma[1],n-10),frequency = 4, start = c(1959,2))
 ts.plot(vol)
 ```
+
 So we have a volatility that fluctuates a lot.
 Yet, we can focus on our intervals
 
@@ -654,6 +659,7 @@ ggplot(data=kalman_frame, aes(x=time, y=kal_NO2)) + geom_line()
 
 ```
 
+
 ```{r}
 # intervals of predictions in sample
 upperCI<-ts(yhat+2*sqrt(vol),frequency = 4, start = c(1959,2))
@@ -661,17 +667,21 @@ lowerCI<-ts(yhat-2*sqrt(vol),frequency = 4, start = c(1959,2))
 ts.plot(ytraining,yhat,upperCI,lowerCI,col=1:4)
 
 ```
+
 ```{r}
 ts.plot(ts(cbind(ytraining[-(1:10)],yhat[-(1:10)],upperCI[-(1:10)],lowerCI[-(1:10)])),col=1:4)
 ```
-The predictions (in black) are quite good. Beside the upper and lower bound of the interval of conﬁdence has big margins.
+
+The predictions (in black) are quite good. Beside the upper and lower bound of the interval of confidence has big margins.
 And finally we have can product the prediction out of sample
+
 ```{r}
 # Prediction out of sample
 ypred<-kal$m[n-15,]  # here we use different lags
 volpred<-kal$F[1,(n-15)]-rep(1,10)+sigma # here we use the variances for different lags
 ts.plot(cbind(Y[1:(n-15),1],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
 ```
+
 This last one is well in the interval of confidence.
 
 
