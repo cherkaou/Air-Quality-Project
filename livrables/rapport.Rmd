@@ -13,9 +13,10 @@ Our project consists of time series analysis using R programming language. Our d
 
 
 ```{r, echo=FALSE}
-#Spécifier le chemin du fichier .csv 
+#Spécifier le chemin du fichier .csv
 #fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
-fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
+fic= "C:/Users/pelti/OneDrive/Documents/GitHub/Air-Quality-Project/data/AirQualityUCI.csv"
+#fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
 data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
 ```
 
@@ -316,23 +317,21 @@ rownames(AIC)<-c("AR1","AR2","AR3","AR4","AR5")
 AIC
 ```
 
-We can see that the minimum of AIC is obtained for the ARMA(5,5) model, so the best model based on the AIC is an ARMA(5,5).
+We can see that the minimum of AIC is obtained for the ARMA(2,5) model, so the best model based on the AIC is an ARMA(2,5).
 
-We can now fit our ARMA(5,5) model.
+We can now fit our ARMA(2,5) model.
 
 ```{r,echo=FALSE}
-fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(5,0,5),include.mean = FALSE)
+fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(2,0,5),include.mean = FALSE)
 fit_arma_model
 ```
 
 We have 
 
 $$
-X_t= 0.144X_{t-1} + 1.2499X_{t-2} - 0.6517X_{t-3} - 0.5872X_{t-4} + 0.4571X_{t-5} + 
+X_t= 1.1177X_{t-1} - 0.9836X_{t-2} + Z_{t} - 1.5211Z_{t-1} - 1.1052Z_{t-2} - 0.1684Z_{t-3} - 0.2120Z_{t-4} - 0.1372Z_{t-5}
 $$
-$$
-Z_{t} - 0.4865Z_{t-1} - 1.5923Z_{t-2} + 0.9387Z_{t-3} + 0.8175Z_{t-4} - 0.6513Z_{t-5}
-$$
+
 Our model is now fitted so we have to check if the residuals are likely white noise.
 
 
@@ -404,7 +403,86 @@ So we can reasonably conclude that the residuals are not gaussians and so the co
 \subsection{5) GARCH model}
 
 We want to fit a GARCH model on the data as an ARMA model is a method to linerarly model the data. But if we want to model volatility we should use a GARCH model.
+```{r,echo=FALSE}
+#GARCH Model
+library(fGarch)
+library(xts)
+library(astsa)
+library(timeDate)
+library(timeSeries)
+library(fBasics)
+library(zoo)
 
+
+objf.garch <- function(vartheta, eps,n,sig2init,petit=sqrt(.Machine$double.eps),r0=10){     
+  omega <- vartheta[1]
+  alpha <- vartheta[2]
+  beta <- vartheta[3]
+  sig2<-rep(0,n)
+  sig2[1]<-sig2init
+  for(t in 2:n){
+    sig2[t]<-omega+alpha*eps[t-1]^2+beta*sig2[t-1]
+  }
+  qml <- mean(eps[(r0+1):n]^2/sig2[(r0+1):n]+log(sig2[(r0+1):n]))
+  qml }
+
+VarAsymp<- function(omega,alpha,beta,eps,sig2init,petit,r0=10){
+  n <- length(eps)
+  dersigma2<-matrix(0,nrow=3,ncol=n)
+  sig2<-rep(0,n)
+  sig2[1]<-sig2init
+  for(t in 2:n){
+    vec<-c(1,eps[t-1]^2,sig2[t-1])
+    sig2[t]<-omega+beta*sig2[t-1]+alpha*eps[t-1]^2
+    dersigma2[1:3,t]<-vec/sig2[t]+beta*dersigma2[1:3,(t-1)]
+  }
+  eta <- eps[(r0+1):n]/sqrt(sig2)[(r0+1):n]
+  eta <- eta/sd(eta)
+  
+  J<-dersigma2[1:3,(r0+1):n]%*%t(dersigma2[1:3,(r0+1):n])/(n-r0)
+  #print(J)
+  kappa4<-mean(eta^4)
+  #print(kappa4)
+  #inv<-solve(J)
+  #print(inv)
+  #test<-(kappa4-1)*inv
+  #print(test)
+  
+  {if(kappa(J)<1/petit) inv<-solve(J) else inv<-matrix(0,nrow=3,ncol=3)}
+  var<-(kappa4-1)*inv
+  list(var=var,residus=eta)
+}
+
+estimGARCH<- function(omega,alpha,beta,eps,petit=sqrt(.Machine$double.eps),r0=10)
+{
+  valinit<-c(omega,alpha,beta)
+  n <- length(eps)
+  sig2init<-var(eps[1:min(n,5)])
+  res <- nlminb(valinit,objf.garch,lower=c(petit,0,0),
+                upper=c(Inf,Inf,1), eps=eps,n=n,sig2init=sig2init)
+  omega <- res$par[1]
+  alpha<- res$par[2]
+  beta <- res$par[3]
+  var<-VarAsymp(omega,alpha,beta,eps,sig2init,petit=sqrt(.Machine$double.eps),r0=10)
+  list(coef=c(omega,alpha,beta),residus=var$residus,var=var$var)
+
+}
+```
+
+```{r, echo=FALSE}
+#Estimation
+par(mfrow=c(1,1))
+
+omega.init<-0.01
+alpha.init<-0.01
+beta.init<-0.01
+factor<-1
+
+fitgarch<-estimGARCH(omega.init,alpha.init,beta.init,eps)
+par<-fitgarch$coef
+res<-fitgarch$residus
+
+```
 The GARCH(p,q) model is the solution (if it exists) to the following system :
 $$
 Z_t=\sigma_t W_t \\
@@ -419,7 +497,7 @@ $$
 We fit a GARCH(1,1) model with several functions studied in class. We obtain this model :
 
 $$
-\sigma_t^2 = 4.953 +0.9539 \sigma_{t-1}^2 + 0.0521 Z_{t-1}^2
+\sigma_t^2 = 1.3679 +0.9383 \sigma_{t-1}^2 + 0.0721 Z_{t-1}^2
 $$
 Then we can check the nullity of $\beta$ :
 ```{r, echo=FALSE}
@@ -451,7 +529,6 @@ cat("p-value :",p.value)
 The p-value is smaller than 0.05 so we can reject the null hypothesis. Therefore $\alpha \neq 0$.
 
 ```{r, echo=FALSE}
-res<-fitgarch$residus
 qqnorm(res)
 qqline(res,col=2)
 ```
