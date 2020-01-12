@@ -14,6 +14,7 @@ Our project consists of time series analysis using R programming language. Our d
 
 ```{r, echo=FALSE}
 #Spécifier le chemin du fichier .csv 
+#fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
 fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
 data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
 ```
@@ -297,18 +298,179 @@ Yet, we will introduce other components, that we didn'tuse in the models previou
 \subsection{1) Preprocessing}
 
 First, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
+
+```{r,echo=FALSE}
+library(data.table)
+#On choisit le fichier qui contient les données
+
+path = file.choose()
+source(path)
+```
+
+
+```{r,echo=FALSE}
+library(KFAS)
+library(ggplot2)
+ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
+
+```
+
+We see indeed that this data need to be stationarised
+
+```{r, echo=FALSE}
+#we stationarise the dataset
+ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency =1)
+ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
+daily_data$PT08.S4.NO2._stat <- c(0,diff(daily_data$PT08.S4.NO2.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
+```
+
+As before, we apply the Augmented Dickey-Fuller Test
+
+```{r}
+
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S4.NO2.)
+print(test_stationnarity)
+```
+
 We do it for each component with a name starting with PT.
 
 To be sure that everything is fine, we use the Augmented Dickey-Fuller Test.
+
+Here are the results for each component.
+
+```{r, echo=FALSE}
+ggplot(daily_data,  aes(x=Date, y=PT08.S1.CO.)) + geom_line()
+```
+
+```{r, echo=FALSE}
+#We stationarise the serie
+ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency =1)
+ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
+daily_data$PT08.S1.CO._stat <- c(0,diff(daily_data$PT08.S1.CO.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S1.CO._stat)) + geom_line()
+```
+
+
+```{r}
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S1.CO.)
+print(test_stationnarity)
+```
+
+```{r,echo=FALSE}
+#We stationarise the serie
+ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency =1)
+ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
+daily_data$PT08.S2.NMHC._stat <- c(0,diff(daily_data$PT08.S2.NMHC.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S4.NO2._stat)) + geom_line()
+
+```
+
+```{r}
+#
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S2.NMHC.)
+print(test_stationnarity)
+```
+
+```{r, echo=FALSE}
+#We stationarise the serie
+ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency =1)
+ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
+daily_data$PT08.S5.O3._stat <- c(0,diff(daily_data$PT08.S5.O3.))
+ggplot(data=daily_data, aes(x=Date, y=PT08.S5.O3._stat)) + geom_line()
+```
+
+```{r}
+#
+library(tseries)
+test_stationnarity = adf.test(ts_stat_PT08.S5.O3.)
+print(test_stationnarity)
+```
 
 \subsection{2) Time varying coefficients}
 
 Now we want to build a dynamical model thanks to the explanatory time series. We know that the order of the AR model was 5, so we will use 5 past values of the time series of interest for predicting the present value of the time series of interest too.
 
-We use the SSModel function :
+```{r, echo=FALSE}
+#now that we have stationarized, we can create the model
+ts_PTO8.S3.NOx. = ts(daily_data$PT08.S3.NOx., start=1, frequency = 1)
+ts_stat_PTO8.S3.NOx. = diff(ts_PTO8.S3.NOx.)
+n<-length(ts_stat_PTO8.S3.NOx.)
+y<-ts(ts_stat_PTO8.S3.NOx. ,frequency = 4, start = c(1959,2))
+ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
+
+#FIRST <- diff(daily_data$PT08.S5.O3.)
+#SECOND <- diff(daily_data$PT08.S1.CO.)
+#THIRD <- diff(daily_data$PT08.S2.NMHC.)
+#FOURTH <- diff(daily_data$PT08.S4.NO2.)
+ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
+ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
+FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
+
+ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
+ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
+SECOND = ts_stat_PT08.S1.CO.[(length(ts_stat_PT08.S1.CO.)-4 ):length(ts_stat_PT08.S1.CO.)]
+
+ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency = 1)
+ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
+THIRD = ts_stat_PT08.S2.NMHC.[(length(ts_stat_PT08.S2.NMHC.)-4 ):length(ts_stat_PT08.S2.NMHC.)]
+
+ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency = 1)
+ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
+FOURTH = ts_stat_PT08.S4.NO2.[(length(ts_stat_PT08.S4.NO2.)-4 ):length(ts_stat_PT08.S4.NO2.)]
+
+Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
+Y <- Y[-c(1:5),]
+tail(Y)   # NA for the lagged versions at the end because we do not know the future!
+```
+
+We use the SSModel function. Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
+
 
 \subsection{3) QLIK}
 
+We have our model so we can use it with a QFAS in order to tune the hyperparameter.
+
 \subsection{4) Prediction}
+
+We have everything yet in order to do the prediction. The intervals of prediction can indeed be produced thanks to the use of the Kalman’s recursion on the tuned dynamical model.
+
+Let's explain why we use this : by contrast with the AR models, it is much more difficult to find the best possible (linear) prediction of an ARMA mode. Indeed, as soon as the MA part is non degenerate, the filter can have infinitely many non null coefficients.
+
+One way to solve the problem is to consider ARMA model as a more general linear model called state space models. Those models have been introduced in signal processing and the best linear prediction can be computed recursively by the Kalman’s recursion.
+How does this work ?
+A state space linear model of dimension r with constant coefficient is given by a system of space euqation and state equations of the form : $X_t = G^TY_t +Z_T$
+                         $Y_t = FY_{t-1} +V_t$
+which are respectively the Space equation and the State equation, where $(Z_t)$ and $(V_t)$ are uncorrelated white noise with variance R and Q, G $\in$ Rr, F $\in$ M(r,r) and Y $\in$ Rr is the random state of the system. The Kalman theorem says : In a state-space model with constant coefficients, if  
+
+$\widehat{Y_0}$ and $\omega_0$ are well chosen, one can compute recursively 
+
+$$ 
+\widehat{X_n} = \pi_{n-1}(X_n)
+$$
+$$\\ R_n^L = E[(X_n - \widehat{X_n})^2] $$
+$$\\ \widehat{Y_n} = \pi_{n-1}(Y_n) $$
+$$\\and\ \Omega_n = E[(Y_n - \widehat{Y_n})(Y_n - \widehat{Y_n})^T] $$
+$$\\by\ the\ following\ recursion\ : \\
+\widehat{Y_{n+1}} = F\widehat{Y_n} + \frac{F\Omega_nG}{R_n^L}*(X_n -G^T\widehat{Y_n}) \\$$
+$$\widehat{X_{n+1}} = (G)^T*\widehat{Y_{n+1}} \\$$
+$$\Omega_{n+1} = F\Omega_nF^T +Q- \frac{F\Omega_nG}{R_n}*G^T\Omega_nF^T \\$$
+$$
+R_{n+1}^L = G^T\Omega_{n+1}G+R 
+$$
+
+The Kalman’s recursion has several advantages :
+- It is a recursve procedures
+- Each step requires the inversion of a scalar RL n and not the entire covariance matrix
+- The recursion can handle missing values nicely
+
+However, there are also some drawbacks :
+- Tuning hyperparameters requires a non explicit minimization
+- The recursion can be instable
+
+Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
 
 \section{IV) Conclusion}
