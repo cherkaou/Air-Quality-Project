@@ -285,7 +285,62 @@ appropriate one.
 
 \subsection{3) ARMA model}
 
-\subsection{4) Residuals} 
+Then, we're going to fit an ARMA model.
+An ARMA(p,q) time series is a process solution of the following model :
+
+$$
+X_t= \phi_{1}X_{t-1} + \phi_{2}X_{t-2} + ... + \phi_{p}X_{t-p} + Z_{t} + \gamma_1Z_{t-1} + ... + \gamma_qZ_{t-q}
+$$
+
+with
+$$\theta=(\phi_{1},...,\phi_{p},\gamma_1,...,\gamma_q)'$$
+the parameters of the model and (Zt) a white noise.
+
+We want to find the ARMA's orders p and q, so we need to use some information criterion. An information criterion is an estimator of the relative quality of statistical models for a given set of data. Indeed, given a collection of models for the data, the information criterion estimates the quality of each model relative to each of the other models. So, we will use the results of the AIC to dertermine the orders of our ARMA model.
+
+The AIC (Akaike Information Criterion) offers an estimate of the relative information lost when a given model is used to represent the process that generated the data. So the model with the minimum AIC is considered as the best model for the given data.
+
+To observe the AIC values obtained we create a matrix with all AIC for p,q<6.
+```{r, echo=FALSE}
+AIC=matrix(0,ncol = 5,nrow=5)
+
+for (i in 1:5){
+  for (j in 1:5){
+    AIC[i,j]=arima(ts_stat_PT08.S3.NOx._train_set,order=c(i,0,j),include.mean=FALSE)$aic
+  }
+}
+
+colnames(AIC)<-c("MA1","MA2","MA3","MA4","MA5")
+rownames(AIC)<-c("AR1","AR2","AR3","AR4","AR5")
+
+AIC
+```
+
+We can see that the minimum of AIC is obtained for the ARMA(5,5) model, so the best model based on the AIC is an ARMA(5,5).
+
+We can now fit our ARMA(5,5) model.
+
+```{r,echo=FALSE}
+fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(5,0,5),include.mean = FALSE)
+fit_arma_model
+```
+
+We have 
+$$
+X_t= 0.136X_{t-1} + 1.2492X_{t-2} - 0.6388X_{t-3} - 0.5835X_{t-4} + 0.4538X_{t-5} + Z_{t} - 0.4778Z_{t-1} - 1.5956Z_{t-2} + 0.9202Z_{t-3} + 0.8193Z_{t-4} - 0.6402Z_{t-5}
+$$
+Our model is now fitted so we have to check if the residuals are likely white noise.
+
+```{r,echo=false}
+tsdiag(fit_arma_model)
+```
+
+By looking at the ACF plot of residuals we can notice there is not significant lag outside the blue confident band which means that the selected model ARMA(5,5) is a good model to represent the serie.
+Moreover, the p-values of the Ljung-Box statistic test are all much greater than 5%, so we can't reject the null hypothesis of the autocorrelation different from 0. The ARMA(5,5) model is an appropriate model for our time series.
+
+\subsection{4) Residuals}
+
+
 
 \subsection{5) GARCH model}
 
