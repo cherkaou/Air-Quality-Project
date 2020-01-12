@@ -74,6 +74,7 @@ data$AH = as.numeric(sub(",", ".", data$AH))
 ```
 
 We noticed that NHMC contains a lot of -200 values, so we prefered to delet it along with all the lines that contain -200. 
+
 ```{r}
 summary(data$NMHC.GT.)
 ```
@@ -91,6 +92,7 @@ str(data)
 ```
 
 Now that our data is nearly clean, we chose to consider the daily concentration of the different gases our main focus of study by taking the average of the concentrations observed daily. 
+
 ```{r, echo=FALSE}
 daily_data = copy(data)
 daily_data$Time = NULL
@@ -106,6 +108,7 @@ We obtain 341 observations of 13 variables.
 ```{r}
 str(daily_data)
 ```
+
 ```{r}
 missmap(daily_data, main = "Missing values vs observed")
 ```
@@ -146,9 +149,11 @@ We will build the NOx concentration as a time series beacause it comes from sens
 \subsection{2) Data preprocessing}
 
 We count one PT08.S3.NOX observation per day for 341 days. We suppose that our time series follows an additive model :
+
 $$
 D_t = S_t + T_t +  X_t 
 $$
+
 Where $(S_t)_t$ is the seasonality, $(T_t)_t$ the trend and $(X_t)_t$  is assumed to be stationary.
 
 
@@ -221,12 +226,15 @@ with the convention $\pi_0(X_1) = 0$ where $\pi_{h-1}(X_0)$ is the projection of
 \subsection{1) MA model}
 
 A MA(q) process, with $q \in N$, is a solution to the equation : 
+
 $$
 X_t = Z_t + \gamma_1Z_{t-1} + ... + \gamma_qZ_{t-q}
 $$
+
 with $t \in Z$ and $(Z_{t})_t$ a white noise. 
 
 In order to find q, we use this MA(q) property : 
+
 $$
 \gamma_{_X}(h) = 0 \ \forall h \ge p
 $$
@@ -302,6 +310,7 @@ We want to find the ARMA's orders p and q, so we need to use some information cr
 The AIC (Akaike Information Criterion) offers an estimate of the relative information lost when a given model is used to represent the process that generated the data. So the model with the minimum AIC is considered as the best model for the given data.
 
 To observe the AIC values obtained we create a matrix with all AIC for p,q<6.
+
 ```{r, echo=FALSE}
 AIC=matrix(0,ncol = 5,nrow=5)
 
@@ -403,6 +412,7 @@ So we can reasonably conclude that the residuals are not gaussians and so the co
 \subsection{5) GARCH model}
 
 We want to fit a GARCH model on the data as an ARMA model is a method to linerarly model the data. But if we want to model volatility we should use a GARCH model.
+
 ```{r,echo=FALSE}
 #GARCH Model
 library(fGarch)
@@ -483,7 +493,9 @@ par<-fitgarch$coef
 res<-fitgarch$residus
 
 ```
+
 The GARCH(p,q) model is the solution (if it exists) to the following system :
+
 $$
 Z_t=\sigma_t W_t \\
 \sigma_t^2 = w +\beta_1 \sigma_{t-1}^2 + ... + \beta_p \sigma_{t-p}^2 + \alpha_1 Z_{t-1}^2 +...+ \alpha_p Z_{t-p}^2
@@ -491,6 +503,7 @@ $$
 where (Zt) is an observed white noise.
 
 For simplicity, we focus on a GARCH(1,1) model :
+
 $$
 \sigma_t^2 = w +\beta_1 \sigma_{t-1}^2 + \alpha_1 Z_{t-1}^2
 $$
@@ -500,6 +513,7 @@ $$
 \sigma_t^2 = 1.3679 +0.9383 \sigma_{t-1}^2 + 0.0721 Z_{t-1}^2
 $$
 Then we can check the nullity of $\beta$ :
+
 ```{r, echo=FALSE}
 #Test beta=0
 
@@ -514,6 +528,7 @@ cat("p-value :",p.value)
 The p-value is smaller than 0.05 so we can reject the null hypothesis (which is $\beta=0$). Therefore $\beta \neq 0$.
 
 We also want to check the nullity of $\alpha$ :
+
 ```{r, echo=FALSE}
 #Test alpha=0
 
@@ -526,12 +541,14 @@ p.value=2*pnorm(-t.value)
 cat("p-value :",p.value)
 
 ```
+
 The p-value is smaller than 0.05 so we can reject the null hypothesis. Therefore $\alpha \neq 0$.
 
 ```{r, echo=FALSE}
 qqnorm(res)
 qqline(res,col=2)
 ```
+
 ```{r, echo=FALSE}
 acf(res^2)
 ```
@@ -542,6 +559,7 @@ The GARCH(1,1) residuals don't seem to be gaussian but the ACF graph obtained sh
 
 We want to construct a one-step interval using the rugarch package.
 We create a matrix to stock the values of the interval's bounds :
+
 ```{r, echo=FALSE}
 #Prediction intervals
 library(rugarch)
@@ -601,8 +619,7 @@ first, we have to stationarise our data with the same method as before. This mea
 ```{r}
 library(data.table)
 #On choisit le fichier qui contient les données
-
-path = file.choose()
+path = "C:/Users/pelti/OneDrive/Documents/GitHub/Air-Quality-Project/src/cleaningData_bis.R"
 source(path)
 ```
 
@@ -791,13 +808,20 @@ $\widehat{Y_0}$ and $\Omega_0$ are well chosen, one can compute recursively
 $$ 
 \widehat{X_n} = \pi_{n-1}(X_n)
 $$
+
 $$\\ R_n^L = E[(X_n - \widehat{X_n})^2] $$
+
 $$\\ \widehat{Y_n} = \pi_{n-1}(Y_n) $$
+
 $$\\and\ \Omega_n = E[(Y_n - \widehat{Y_n})(Y_n - \widehat{Y_n})^T] $$
+
 $$\\by\ the\ following\ recursion\ : \\
 \widehat{Y_{n+1}} = F\widehat{Y_n} + \frac{F\Omega_nG}{R_n^L}*(X_n -G^T\widehat{Y_n}) \\$$
+
 $$\widehat{X_{n+1}} = (G)^T*\widehat{Y_{n+1}} \\$$
+
 $$\Omega_{n+1} = F\Omega_nF^T +Q- \frac{F\Omega_nG}{R_n}*G^T\Omega_nF^T \\$$
+
 $$
 R_{n+1}^L = G^T\Omega_{n+1}G+R 
 $$
