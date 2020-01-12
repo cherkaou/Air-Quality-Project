@@ -408,31 +408,49 @@ ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
 #FOURTH <- diff(daily_data$PT08.S4.NO2.)
 ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
 ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
-FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
-
+FIRST = ts_stat_PT08.S5.O3.
+```
+```{r}
 ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
 ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
-SECOND = ts_stat_PT08.S1.CO.[(length(ts_stat_PT08.S1.CO.)-4 ):length(ts_stat_PT08.S1.CO.)]
+SECOND = ts_stat_PT08.S1.CO.
 
 ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency = 1)
 ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
-THIRD = ts_stat_PT08.S2.NMHC.[(length(ts_stat_PT08.S2.NMHC.)-4 ):length(ts_stat_PT08.S2.NMHC.)]
+THIRD = ts_stat_PT08.S2.NMHC.
 
 ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency = 1)
 ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
-FOURTH = ts_stat_PT08.S4.NO2.[(length(ts_stat_PT08.S4.NO2.)-4 ):length(ts_stat_PT08.S4.NO2.)]
+FOURTH = ts_stat_PT08.S4.NO2.
 
 Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
-Y <- Y[-c(1:5),]
+Y <- Y[-c(1:10),]
 tail(Y)   # NA for the lagged versions at the end because we do not know the future!
 ```
 
 We use the SSModel function. Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
+```{r}
+print(class(data))
+H <- diag(1,10)
+H = as.data.frame(H)
+model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ FIRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(NA,4), H))
+fit <- fitSSM(model, inits = c(0.1,0.1,0.1,0.1), method = "BFGS")
 
+```
 
 \subsection{3) QLIK}
 
 We have our model so we can use it with a QFAS in order to tune the hyperparameter.
+
+```{r}
+model <- fit$model
+model$Q
+model$H    # reduced version of the QLIK
+kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
+kal
+# the parameters for the 1 step prediction
+plot.ts(kal$a[,1:4] )
+```
 
 \subsection{4) Prediction}
 
@@ -472,5 +490,7 @@ However, there are also some drawbacks :
 - The recursion can be instable
 
 Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
+
+
 
 \section{IV) Conclusion}
