@@ -117,7 +117,7 @@ tail(Y)   # NA for the lagged versions at the end because we do not know the fut
 print(class(data))
 H <- diag(1,10)
 H = as.data.frame(H)
-#model <- SSModel(Y[-1,] ~-1+ SSMregression(~ FIRST[-c((n-4):(n+1))]+ SECOND[-c((n-4):(n+1))]+ THIRD[-c((n-4):(n+1))] + FOURTH[-c((n-4):(n+1))], Q=diag(NA,4),R=t(matrix(rep(diag(1,4),5),nrow=4))), H)
+
 SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H)
 
 model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ FIRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(1,4), H))
