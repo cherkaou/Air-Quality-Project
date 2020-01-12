@@ -150,6 +150,7 @@ sigma <- colMeans((kal$m-Y[(n-5):(n-1),1])^2,na.rm = TRUE)   # remove a burn-in 
 plot(sigma)
 
 ```
+
 ```{r}
 # the predictions in sample
 yhat<-ts(kal$m[,1],frequency = 4, start = c(1959,2))
