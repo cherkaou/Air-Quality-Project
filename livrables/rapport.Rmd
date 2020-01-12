@@ -294,7 +294,7 @@ $$
 
 with
 $$\theta=(\phi_{1},...,\phi_{p},\gamma_1,...,\gamma_q)'$$
-the parameters of the model and (Zt) a white noise.
+the parameters of the model and $Z_t$ a white noise.
 
 We want to find the ARMA's orders p and q, so we need to use some information criterion. An information criterion is an estimator of the relative quality of statistical models for a given set of data. Indeed, given a collection of models for the data, the information criterion estimates the quality of each model relative to each of the other models. So, we will use the results of the AIC to dertermine the orders of our ARMA model.
 
@@ -326,14 +326,20 @@ fit_arma_model
 ```
 
 We have 
+
 $$
-X_t= 0.136X_{t-1} + 1.2492X_{t-2} - 0.6388X_{t-3} - 0.5835X_{t-4} + 0.4538X_{t-5} + Z_{t} - 0.4778Z_{t-1} - 1.5956Z_{t-2} + 0.9202Z_{t-3} + 0.8193Z_{t-4} - 0.6402Z_{t-5}
+X_t= 0.144X_{t-1} + 1.2499X_{t-2} - 0.6517X_{t-3} - 0.5872X_{t-4} + 0.4571X_{t-5} + 
+$$
+$$
+Z_{t} - 0.4865Z_{t-1} - 1.5923Z_{t-2} + 0.9387Z_{t-3} + 0.8175Z_{t-4} - 0.6513Z_{t-5}
 $$
 Our model is now fitted so we have to check if the residuals are likely white noise.
 
-```{r,echo=false}
+
+```{r,echo=FALSE}
 tsdiag(fit_arma_model)
 ```
+
 
 By looking at the ACF plot of residuals we can notice there is not significant lag outside the blue confident band which means that the selected model ARMA(5,5) is a good model to represent the serie.
 Moreover, the p-values of the Ljung-Box statistic test are all much greater than 5%, so we can't reject the null hypothesis of the autocorrelation different from 0. The ARMA(5,5) model is an appropriate model for our time series.
@@ -360,24 +366,29 @@ par(mfrow=c(2,1))
 plot.ts(eps)
 plot.ts(eps^2)
 ```
+
 We notice an outlier at time 208 which means something unusual has may happened this day.
 
 Then we plot the ACF graphs :
 
-```{r, ehco=FALSE}
+```{r, echo=FALSE}
 par(mfrow=c(2,1))
 acf(eps,lag=25)
 acf(eps^2,lag=25)
 ```
+
 These plots show us there is no autocorrelation remaining in the residuals which means that the chosen model captures the pattern in the data effectively.
 
-Finally we plot the QQ plot of the residuals to observe their behavior :
+
+finally we plot the QQ plot of the residuals to observe their behavior :
+
 ```{r, echo=FALSE}
-par(mfrow=c(1,1))
+#par(mfrow=c(1,1))
 qqnorm(eps)
 qqline(eps,col=2)
 
 ```
+
 By looking at this graph we can conlude that the residuals don't seem gaussian as there are too many extreme values, and thus fat tail. The relationship between sample quantiles and theoretical quantiles is not linear.
 
 We can validate our hypothesis of the non normality of the residuals by performing a Jarque-Bera test. This test verify whether sample data have the skewness and kurtosis corresponding to a normal distribution.
@@ -480,9 +491,9 @@ Yet, we will introduce other components, that we didn'tuse in the models previou
 
 \subsection{1) Preprocessing}
 
-First, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
+first, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
 
-```{r,echo=FALSE}
+```{r}
 library(data.table)
 #On choisit le fichier qui contient les données
 
@@ -491,7 +502,7 @@ source(path)
 ```
 
 
-```{r,echo=FALSE}
+```{r}
 library(KFAS)
 library(ggplot2)
 ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
@@ -500,7 +511,7 @@ ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
 
 We see indeed that this data need to be stationarised
 
-```{r, echo=FALSE}
+```{r}
 #we stationarise the dataset
 ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency =1)
 ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
@@ -521,7 +532,7 @@ We do it for each component with a name starting with PT.
 
 To be sure that everything is fine, we use the Augmented Dickey-Fuller Test.
 
-Here are the results for each component.
+Here are the results of this tests after the stationarisation for each component.
 
 ```{r, echo=FALSE}
 ggplot(daily_data,  aes(x=Date, y=PT08.S1.CO.)) + geom_line()
@@ -585,37 +596,78 @@ n<-length(ts_stat_PTO8.S3.NOx.)
 y<-ts(ts_stat_PTO8.S3.NOx. ,frequency = 4, start = c(1959,2))
 ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
 
-#FIRST <- diff(daily_data$PT08.S5.O3.)
+#fiRST <- diff(daily_data$PT08.S5.O3.)
 #SECOND <- diff(daily_data$PT08.S1.CO.)
 #THIRD <- diff(daily_data$PT08.S2.NMHC.)
 #FOURTH <- diff(daily_data$PT08.S4.NO2.)
 ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
 ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
-FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
+fiRST = ts_stat_PT08.S5.O3.
 
 ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
 ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
-SECOND = ts_stat_PT08.S1.CO.[(length(ts_stat_PT08.S1.CO.)-4 ):length(ts_stat_PT08.S1.CO.)]
+SECOND = ts_stat_PT08.S1.CO.
 
 ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency = 1)
 ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
-THIRD = ts_stat_PT08.S2.NMHC.[(length(ts_stat_PT08.S2.NMHC.)-4 ):length(ts_stat_PT08.S2.NMHC.)]
+THIRD = ts_stat_PT08.S2.NMHC.
 
 ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency = 1)
 ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
-FOURTH = ts_stat_PT08.S4.NO2.[(length(ts_stat_PT08.S4.NO2.)-4 ):length(ts_stat_PT08.S4.NO2.)]
+FOURTH = ts_stat_PT08.S4.NO2.
 
 Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
 Y <- Y[-c(1:5),]
 tail(Y)   # NA for the lagged versions at the end because we do not know the future!
+
 ```
 
 We use the SSModel function. Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
+
+```{r, echo=FALSE}
+print(class(data))
+H <- diag(1,10)
+H = as.data.frame(H)
+
+#SSMregression(~ fiRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H)
+
+model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ fiRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(1,4), H))
+
+fit <- fitSSM(model, inits = c(0.1,0.1,0.1,0.1), method = "BFGS")
+```
 
 
 \subsection{3) QLIK}
 
 We have our model so we can use it with a QFAS in order to tune the hyperparameter.
+
+```{r, echo=FALSE}
+model <- fit$model
+model$Q    # third coeffcient constant?
+model$H    # reduced version of the QLIK
+kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
+
+# the parameters for the 1 step prediction
+plot.ts(kal$a[6:10] )
+```
+
+We have the covariance matrix of disturbance terms that is the identity.
+So we have for each component this result :
+
+```{r}
+# the parameters for the 1 step prediction
+plot.ts(kal$a[,1:4] )
+```
+
+and we find the variance
+
+```{r}
+# the variances estimation as mean square errors for 10 lags
+sigma <- colMeans((kal$m-Y[(n-5):(n-1),1])^2,na.rm = TRUE)   # remove a burn-in period to estimate the variances
+plot(sigma)
+
+```
+It seems that Variances can be seen as constant through time here.
 
 \subsection{4) Prediction}
 
@@ -645,16 +697,73 @@ $$
 R_{n+1}^L = G^T\Omega_{n+1}G+R 
 $$
 
+
+Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
+
+```{r}
+#the predictions in sample
+yhat<-ts(kal$m[,1],frequency = 4, start = c(1959,2))
+ts.plot(yhat)
+```
+
+```{r}
+# the estimation of the volatility, i.e. the condiitonal variance of the 1-step prediction
+
+vol<-ts(kal$F[1,]-rep(1,n-10)+rep(sigma[1],n-10),frequency = 4, start = c(1959,2))
+ts.plot(vol)
+```
+
+So we have a volatility that fluctuates a lot.
+Yet, we can focus on our intervals
+
+```{r}
+kalman_frame <- data.frame(kal_S5.03 <- as.vector(kal$a[,1]),
+                           kal_CO <- as.vector(kal$a[,2]),
+                           kal_NMHC <- as.vector(kal$a[,3]),
+                           kal_NO2 <- as.vector(kal$a[,4]),
+                           time <- daily_data$Date[1:(n-14)])
+
+# The parameters for the 1 step prediction
+ggplot(data=kalman_frame, aes(x=time, y=kal_S5.03)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_CO)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_NMHC)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_NO2)) + geom_line()
+
+```
+
+
+```{r}
+# intervals of predictions in sample
+upperCI<-ts(yhat+2*sqrt(vol),frequency = 4, start = c(1959,2))
+lowerCI<-ts(yhat-2*sqrt(vol),frequency = 4, start = c(1959,2))
+ts.plot(ytraining,yhat,upperCI,lowerCI,col=1:4)
+
+```
+
+```{r}
+ts.plot(ts(cbind(ytraining[-(1:10)],yhat[-(1:10)],upperCI[-(1:10)],lowerCI[-(1:10)])),col=1:4)
+```
+
+The predictions (in black) are quite good. Beside the upper and lower bound of the interval of confidence has big margins.
+And finally we have can product the prediction out of sample
+
+```{r}
+# Prediction out of sample
+ypred<-kal$m[n-15,]  # here we use different lags
+volpred<-kal$F[1,(n-15)]-rep(1,10)+sigma # here we use the variances for different lags
+ts.plot(cbind(Y[1:(n-15),1],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
+```
+
+This last one is well in the interval of confidence. So we can say that this prediction is efficient
+
 The Kalman’s recursion has several advantages :
 - It is a recursve procedures
-- Each step requires the inversion of a scalar RL n and not the entire covariance matrix
+- Each step requires the inversion of a scalar R_n and not the entire covariance matrix
 - The recursion can handle missing values nicely
 
 However, there are also some drawbacks :
 - Tuning hyperparameters requires a non explicit minimization
 - The recursion can be instable
-
-Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
 
 \section{IV) Conclusion}
 In conclusion, this project allowed us to implement various time series models on R, namely AR, MA, ARMA and GARCH and also to get an insight on the Kalman recursion. It also allowed us to learn about versioning tools such as Github in order to easilty share our code among us and finally, to practice latex and markdown. 
