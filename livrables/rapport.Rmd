@@ -285,7 +285,110 @@ appropriate one.
 
 \subsection{3) ARMA model}
 
-\subsection{4) Residuals} 
+Then, we're going to fit an ARMA model.
+An ARMA(p,q) time series is a process solution of the following model :
+
+$$
+X_t= \phi_{1}X_{t-1} + \phi_{2}X_{t-2} + ... + \phi_{p}X_{t-p} + Z_{t} + \gamma_1Z_{t-1} + ... + \gamma_qZ_{t-q}
+$$
+
+with
+$$\theta=(\phi_{1},...,\phi_{p},\gamma_1,...,\gamma_q)'$$
+the parameters of the model and (Zt) a white noise.
+
+We want to find the ARMA's orders p and q, so we need to use some information criterion. An information criterion is an estimator of the relative quality of statistical models for a given set of data. Indeed, given a collection of models for the data, the information criterion estimates the quality of each model relative to each of the other models. So, we will use the results of the AIC to dertermine the orders of our ARMA model.
+
+The AIC (Akaike Information Criterion) offers an estimate of the relative information lost when a given model is used to represent the process that generated the data. So the model with the minimum AIC is considered as the best model for the given data.
+
+To observe the AIC values obtained we create a matrix with all AIC for p,q<6.
+```{r, echo=FALSE}
+AIC=matrix(0,ncol = 5,nrow=5)
+
+for (i in 1:5){
+  for (j in 1:5){
+    AIC[i,j]=arima(ts_stat_PT08.S3.NOx._train_set,order=c(i,0,j),include.mean=FALSE)$aic
+  }
+}
+
+colnames(AIC)<-c("MA1","MA2","MA3","MA4","MA5")
+rownames(AIC)<-c("AR1","AR2","AR3","AR4","AR5")
+
+AIC
+```
+
+We can see that the minimum of AIC is obtained for the ARMA(5,5) model, so the best model based on the AIC is an ARMA(5,5).
+
+We can now fit our ARMA(5,5) model.
+
+```{r,echo=FALSE}
+fit_arma_model=arima(ts_stat_PT08.S3.NOx._train_set,order = c(5,0,5),include.mean = FALSE)
+fit_arma_model
+```
+
+We have 
+$$
+X_t= 0.136X_{t-1} + 1.2492X_{t-2} - 0.6388X_{t-3} - 0.5835X_{t-4} + 0.4538X_{t-5} + Z_{t} - 0.4778Z_{t-1} - 1.5956Z_{t-2} + 0.9202Z_{t-3} + 0.8193Z_{t-4} - 0.6402Z_{t-5}
+$$
+Our model is now fitted so we have to check if the residuals are likely white noise.
+
+```{r,echo=false}
+tsdiag(fit_arma_model)
+```
+
+By looking at the ACF plot of residuals we can notice there is not significant lag outside the blue confident band which means that the selected model ARMA(5,5) is a good model to represent the serie.
+Moreover, the p-values of the Ljung-Box statistic test are all much greater than 5%, so we can't reject the null hypothesis of the autocorrelation different from 0. The ARMA(5,5) model is an appropriate model for our time series.
+
+\subsection{4) Residuals}
+
+We have fitted two models, and then e have to choose between these two models. In order to make this choice, we will look at two information criterions : the AIC previously used and the BIC a cirterion similar to the AIC but with a different penalty for the numbers of parameters.
+
+```{r, echo=FALSE}
+#Model Selection
+AIC(fit_ar_model,fit_arma_model)
+BIC(fit_ar_model,fit_arma_model)
+```
+
+The smallest AIC and the smallest BIC are bith given for the ARMA(5,5) model, so we are going to choose this one for the rest of the project.
+
+We want to check the normality of the residuals.
+We begin our analysis by plotting the residuals and the suqarred residuals :
+
+```{r, echo=FALSE}
+#Residuals
+eps<-ts(fit_arma_model$residuals,frequency=1,start=1)
+par(mfrow=c(2,1))
+plot.ts(eps)
+plot.ts(eps^2)
+```
+We notice an outlier at time 208 which means something unusual has may happened this day.
+
+Then we plot the ACF graphs :
+
+```{r, ehco=FALSE}
+par(mfrow=c(2,1))
+acf(eps,lag=25)
+acf(eps^2,lag=25)
+```
+These plots show us there is no autocorrelation remaining in the residuals which means that the chosen model captures the pattern in the data effectively.
+
+Finally we plot the QQ plot of the residuals to observe their behavior :
+```{r, echo=FALSE}
+par(mfrow=c(1,1))
+qqnorm(eps)
+qqline(eps,col=2)
+
+```
+By looking at this graph we can conlude that the residuals don't seem gaussian as there are too many extreme values, and thus fat tail. The relationship between sample quantiles and theoretical quantiles is not linear.
+
+We can validate our hypothesis of the non normality of the residuals by performing a Jarque-Bera test. This test verify whether sample data have the skewness and kurtosis corresponding to a normal distribution.
+
+```{r,echo=FALSE}
+jarque.bera.test(eps)
+```
+The p-value is smaller than 5% so we can reject the null hypothesis of the data normally distributed.
+
+So we can reasonably conclude that the residuals are not gaussians and so the condition of the normal distribution of the error terms is not met.
+
 
 \subsection{5) GARCH model}
 
@@ -408,49 +511,31 @@ ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
 #FOURTH <- diff(daily_data$PT08.S4.NO2.)
 ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
 ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
-FIRST = ts_stat_PT08.S5.O3.
-```
-```{r}
+FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
+
 ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
 ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
-SECOND = ts_stat_PT08.S1.CO.
+SECOND = ts_stat_PT08.S1.CO.[(length(ts_stat_PT08.S1.CO.)-4 ):length(ts_stat_PT08.S1.CO.)]
 
 ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency = 1)
 ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
-THIRD = ts_stat_PT08.S2.NMHC.
+THIRD = ts_stat_PT08.S2.NMHC.[(length(ts_stat_PT08.S2.NMHC.)-4 ):length(ts_stat_PT08.S2.NMHC.)]
 
 ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency = 1)
 ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
-FOURTH = ts_stat_PT08.S4.NO2.
+FOURTH = ts_stat_PT08.S4.NO2.[(length(ts_stat_PT08.S4.NO2.)-4 ):length(ts_stat_PT08.S4.NO2.)]
 
 Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
-Y <- Y[-c(1:10),]
+Y <- Y[-c(1:5),]
 tail(Y)   # NA for the lagged versions at the end because we do not know the future!
 ```
 
 We use the SSModel function. Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
-```{r}
-print(class(data))
-H <- diag(1,10)
-H = as.data.frame(H)
-model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ FIRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(NA,4), H))
-fit <- fitSSM(model, inits = c(0.1,0.1,0.1,0.1), method = "BFGS")
 
-```
 
 \subsection{3) QLIK}
 
 We have our model so we can use it with a QFAS in order to tune the hyperparameter.
-
-```{r}
-model <- fit$model
-model$Q
-model$H    # reduced version of the QLIK
-kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
-kal
-# the parameters for the 1 step prediction
-plot.ts(kal$a[,1:4] )
-```
 
 \subsection{4) Prediction}
 
@@ -464,7 +549,7 @@ A state space linear model of dimension r with constant coefficient is given by 
                          $Y_t = FY_{t-1} +V_t$
 which are respectively the Space equation and the State equation, where $(Z_t)$ and $(V_t)$ are uncorrelated white noise with variance R and Q, G $\in$ Rr, F $\in$ M(r,r) and Y $\in$ Rr is the random state of the system. The Kalman theorem says : In a state-space model with constant coefficients, if  
 
-$\widehat{Y_0}$ and $\omega_0$ are well chosen, one can compute recursively 
+$\widehat{Y_0}$ and $\Omega_0$ are well chosen, one can compute recursively 
 
 $$ 
 \widehat{X_n} = \pi_{n-1}(X_n)
@@ -491,6 +576,5 @@ However, there are also some drawbacks :
 
 Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
 
-
-
 \section{IV) Conclusion}
+In conclusion, this project allowed us to implement various time series models on R, namely AR, MA, ARMA and GARCH and also to get an insight on the Kalman recursion. It also allowed us to learn about versioning tools such as Github in order to easilty share our code among us and finally, to practice latex and markdown. 
