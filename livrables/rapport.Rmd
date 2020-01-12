@@ -413,7 +413,7 @@ Yet, we will introduce other components, that we didn'tuse in the models previou
 
 First, we have to stationarise our data with the same method as before. This means that we remove seasonal and trend components by using differencing.
 
-```{r,echo=FALSE}
+```{r}
 library(data.table)
 #On choisit le fichier qui contient les données
 
@@ -422,7 +422,7 @@ source(path)
 ```
 
 
-```{r,echo=FALSE}
+```{r}
 library(KFAS)
 library(ggplot2)
 ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
@@ -431,7 +431,7 @@ ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
 
 We see indeed that this data need to be stationarised
 
-```{r, echo=FALSE}
+```{r}
 #we stationarise the dataset
 ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency =1)
 ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
@@ -452,7 +452,7 @@ We do it for each component with a name starting with PT.
 
 To be sure that everything is fine, we use the Augmented Dickey-Fuller Test.
 
-Here are the results for each component.
+Here are the results of this tests after the stationarisation for each component.
 
 ```{r, echo=FALSE}
 ggplot(daily_data,  aes(x=Date, y=PT08.S1.CO.)) + geom_line()
@@ -570,6 +570,7 @@ kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
 # the parameters for the 1 step prediction
 plot.ts(kal$a[6:10] )
 ```
+We have the covariance matrix of disturbance terms that is the identity.
 So we have for each component this result :
 ```{r}
 # the parameters for the 1 step prediction
@@ -583,6 +584,7 @@ plot(sigma)
 
 ```
 It seems that Variances can be seen as constant through time here.
+
 \subsection{4) Prediction}
 
 We have everything yet in order to do the prediction. The intervals of prediction can indeed be produced thanks to the use of the Kalman’s recursion on the tuned dynamical model.
