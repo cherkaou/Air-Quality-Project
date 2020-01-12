@@ -294,7 +294,7 @@ $$
 
 with
 $$\theta=(\phi_{1},...,\phi_{p},\gamma_1,...,\gamma_q)'$$
-the parameters of the model and (Zt) a white noise.
+the parameters of the model and $Z_t$ a white noise.
 
 We want to find the ARMA's orders p and q, so we need to use some information criterion. An information criterion is an estimator of the relative quality of statistical models for a given set of data. Indeed, given a collection of models for the data, the information criterion estimates the quality of each model relative to each of the other models. So, we will use the results of the AIC to dertermine the orders of our ARMA model.
 
@@ -326,14 +326,20 @@ fit_arma_model
 ```
 
 We have 
+
 $$
-X_t= 0.136X_{t-1} + 1.2492X_{t-2} - 0.6388X_{t-3} - 0.5835X_{t-4} + 0.4538X_{t-5} + Z_{t} - 0.4778Z_{t-1} - 1.5956Z_{t-2} + 0.9202Z_{t-3} + 0.8193Z_{t-4} - 0.6402Z_{t-5}
+X_t= 0.144X_{t-1} + 1.2499X_{t-2} - 0.6517X_{t-3} - 0.5872X_{t-4} + 0.4571X_{t-5} + 
+$$
+$$
+Z_{t} - 0.4865Z_{t-1} - 1.5923Z_{t-2} + 0.9387Z_{t-3} + 0.8175Z_{t-4} - 0.6513Z_{t-5}
 $$
 Our model is now fitted so we have to check if the residuals are likely white noise.
 
-```{r,echo=false}
+
+```{r,echo=FALSE}
 tsdiag(fit_arma_model)
 ```
+
 
 By looking at the ACF plot of residuals we can notice there is not significant lag outside the blue confident band which means that the selected model ARMA(5,5) is a good model to represent the serie.
 Moreover, the p-values of the Ljung-Box statistic test are all much greater than 5%, so we can't reject the null hypothesis of the autocorrelation different from 0. The ARMA(5,5) model is an appropriate model for our time series.
@@ -360,24 +366,29 @@ par(mfrow=c(2,1))
 plot.ts(eps)
 plot.ts(eps^2)
 ```
+
 We notice an outlier at time 208 which means something unusual has may happened this day.
 
 Then we plot the ACF graphs :
 
-```{r, ehco=FALSE}
+```{r, echo=FALSE}
 par(mfrow=c(2,1))
 acf(eps,lag=25)
 acf(eps^2,lag=25)
 ```
+
 These plots show us there is no autocorrelation remaining in the residuals which means that the chosen model captures the pattern in the data effectively.
 
+
 Finally we plot the QQ plot of the residuals to observe their behavior :
+
 ```{r, echo=FALSE}
-par(mfrow=c(1,1))
+#par(mfrow=c(1,1))
 qqnorm(eps)
 qqline(eps,col=2)
 
 ```
+
 By looking at this graph we can conlude that the residuals don't seem gaussian as there are too many extreme values, and thus fat tail. The relationship between sample quantiles and theoretical quantiles is not linear.
 
 We can validate our hypothesis of the non normality of the residuals by performing a Jarque-Bera test. This test verify whether sample data have the skewness and kurtosis corresponding to a normal distribution.
