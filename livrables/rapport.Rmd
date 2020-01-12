@@ -392,7 +392,87 @@ So we can reasonably conclude that the residuals are not gaussians and so the co
 
 \subsection{5) GARCH model}
 
+We want to fit a GARCH model on the data as an ARMA model is a method to linerarly model the data. But if we want to model volatility we should use a GARCH model.
+
+The GARCH(p,q) model is the solution (if it exists) to the following system :
+$$
+Z_t=\sigma_t W_t \\
+\sigma_t^2 = w +\beta_1 \sigma_{t-1}^2 + ... + \beta_p \sigma_{t-p}^2 + \alpha_1 Z_{t-1}^2 +...+ \alpha_p Z_{t-p}^2
+$$
+where (Zt) is an observed white noise.
+
+For simplicity, we focus on a GARCH(1,1) model :
+$$
+\sigma_t^2 = w +\beta_1 \sigma_{t-1}^2 + \alpha_1 Z_{t-1}^2
+$$
+We fit a GARCH(1,1) model with several functions studied in class. We obtain this model :
+
+$$
+\sigma_t^2 = 4.953 +0.9539 \sigma_{t-1}^2 + 0.0521 Z_{t-1}^2
+$$
+Then we can check the nullity of $\beta$ :
+```{r, echo=FALSE}
+#Test beta=0
+
+beta=par[3]
+sigmabeta=fitgarch$var[3,3]
+se=sqrt(sigmabeta)/sqrt(T)
+t.value=beta/se
+p.value=2*pnorm(-t.value)
+
+cat("p-value :",p.value)
+```
+The p-value is smaller than 0.05 so we can reject the null hypothesis (which is $\beta=0$). Therefore $\beta \neq 0$.
+
+We also want to check the nullity of $\alpha$ :
+```{r, echo=FALSE}
+#Test alpha=0
+
+alpha=par[2]
+sigmaalpha=fitgarch$var[2,2]
+se=sqrt(sigmaalpha)/sqrt(T)
+t.value=alpha/se
+p.value=2*pnorm(-t.value)
+
+cat("p-value :",p.value)
+
+```
+The p-value is smaller than 0.05 so we can reject the null hypothesis. Therefore $\alpha \neq 0$.
+
+```{r, echo=FALSE}
+res<-fitgarch$residus
+qqnorm(res)
+qqline(res,col=2)
+```
+```{r, echo=FALSE}
+acf(res^2)
+```
+The GARCH(1,1) residuals don't seem to be gaussian but the ACF graph obtained shows no autocorrelation remaining in the residuals.
+
+
 \subsection{6) Prediction intervals for the 10 most recent data}
+
+We want to construct a one-step interval using the rugarch package.
+We create a matrix to stock the values of the interval's bounds :
+
+```{r, echo=FALSE}
+garch_matrix <- matrix(nrow = 10, ncol=2)
+
+for (i in 1:10){
+  garch_matrix[i,1]<-lower[i] #borne inf
+  garch_matrix[i,2]<-upper[i] #borne sup
+}
+colnames(garch_matrix)<-c("Lower bound","Upper bound")
+garch_matrix
+```
+
+We can observe our prediction interval on a graph with the previous values (dark line) and the real values observed (red points) :
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(data=prediction_results)+geom_line(aes(x=prediction_results$Date,y=prediction_results$`Previous values`))+geom_line(aes(x=prediction_results$Date,y=prediction_results$Lower_bound),color="blue")+geom_line(aes(x=prediction_results$Date,y=prediction_results$Upper_bound),color="blue")+geom_point(aes(x=prediction_results$Date,y=prediction_results$`Real values`),color="red")+ggtitle("Interval of prediction and the real values for the next 10 periods")+ylab("Values")+xlab("Period")
+```
+We can notice that the real values are inside our forecast interval, howerver our interval is not really accurate as it is almost constant and very large.
 
 \section{III)-Training on the times series of interest using explanatory times series}
 
