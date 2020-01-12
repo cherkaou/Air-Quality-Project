@@ -474,3 +474,4 @@ However, there are also some drawbacks :
 Our target variable is ts_PTO8.S3.NOx. and our covariates are the other components starting with PT.
 
 \section{IV) Conclusion}
+In conclusion, this project allowed us to implement R various time series models on R, namely AR, MA, ARMA and GARCH and also to get an insight on Kalman recursion. It also allowed us to learn about versioning tools such as Github in order to easilty share our code among us and finally, to practice latex and markdown. 
