@@ -1,7 +1,7 @@
 library(data.table)
 #On choisit le fichier qui contient les données
 
-fic = "/home/yousra/3A/cours/SeriesTemp/Air-Quality-Project/data/AirQualityUCI.csv"
+fic = "C:/Users/pelti/OneDrive/Documents/GitHub/Air-Quality-Project/data/AirQualityUCI.csv"
 data = read.csv(fic, header = TRUE, sep = ";", stringsAsFactors = FALSE)
 
 #On supprime ces deux colonnes car elles contiennent des valeurs manquantes 
