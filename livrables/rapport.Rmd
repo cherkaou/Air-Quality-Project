@@ -465,6 +465,24 @@ The GARCH(1,1) residuals don't seem to be gaussian but the ACF graph obtained sh
 
 We want to construct a one-step interval using the rugarch package.
 We create a matrix to stock the values of the interval's bounds :
+```{r, echo=FALSE}
+#Prediction intervals
+library(rugarch)
+
+#Fit a ARMA(1,1)-GARCH(1,1) in 1 step 
+model_garch<-ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)), 
+                        mean.model = list(armaOrder = c(1, 1), include.mean = FALSE), 
+                        distribution.model = "norm")
+
+modelfit_garch<-ugarchfit(spec=model_garch,data=ts_stat_PT08.S3.NOx._train_set)
+
+forecast_garch=ugarchforecast(modelfit_garch,n.ahead = 10)@forecast
+
+#prediction interval
+lower <- ts(forecast_garch$seriesFor-1.96*forecast_garch$sigmaFor, start = 331)
+upper <- ts(forecast_garch$seriesFor+1.96*forecast_garch$sigmaFor, start = 331)
+
+```
 
 ```{r, echo=FALSE}
 garch_matrix <- matrix(nrow = 10, ncol=2)
@@ -478,6 +496,16 @@ garch_matrix
 ```
 
 We can observe our prediction interval on a graph with the previous values (dark line) and the real values observed (red points) :
+
+```{r, echo=FALSE}
+prediction_results <- data.frame(time <- daily_data$Date[321:340],
+                  previous_values <- c(ts_stat_PT08.S3.NOx._train_set[321:330],rep(NA,10)),
+                  real_value<-c(rep(NA,10),ts_stat_PT08.S3.NOx.[331:340]),
+                  Lower_bound<-c(rep(NA,10),garch_matrix[,1]),
+                  Upper_bound<-c(rep(NA,10),garch_matrix[,2]))
+
+colnames(prediction_results)<-c("Date","Previous values","Real values","Lower_bound","Upper_bound")
+```
 
 ```{r, echo=FALSE}
 library(ggplot2)
