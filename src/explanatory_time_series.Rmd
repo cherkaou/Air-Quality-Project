@@ -94,45 +94,55 @@ ytraining<-ts(y[-((n-5):n)],frequency = 4, start = c(1959,2))
 #FOURTH <- diff(daily_data$PT08.S4.NO2.)
 ts_PT08.S5.O3. = ts(daily_data$PT08.S5.O3., start=1, frequency = 1)
 ts_stat_PT08.S5.O3. = diff(ts_PT08.S5.O3.)
-FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
-
+#FIRST = ts_stat_PT08.S5.O3.[(length(ts_stat_PT08.S5.O3.)-4 ):length(ts_stat_PT08.S5.O3.)]
+#FIRST = ts_stat_PT08.S5.O3.[1:(length(ts_stat_PT08.S5.O3.)-10)]
+FIRST = ts_stat_PT08.S5.O3.
+```
+```{r}
 ts_PT08.S1.CO. = ts(daily_data$PT08.S1.CO., start=1, frequency = 1)
 ts_stat_PT08.S1.CO. = diff(ts_PT08.S1.CO.)
-SECOND = ts_stat_PT08.S1.CO.[(length(ts_stat_PT08.S1.CO.)-4 ):length(ts_stat_PT08.S1.CO.)]
+#SECOND = ts_stat_PT08.S1.CO.[1:(length(ts_stat_PT08.S1.CO.)-10)]
+SECOND = ts_stat_PT08.S1.CO.
 
 ts_PT08.S2.NMHC. = ts(daily_data$PT08.S2.NMHC., start=1, frequency = 1)
 ts_stat_PT08.S2.NMHC. = diff(ts_PT08.S2.NMHC.)
-THIRD = ts_stat_PT08.S2.NMHC.[(length(ts_stat_PT08.S2.NMHC.)-4 ):length(ts_stat_PT08.S2.NMHC.)]
+#THIRD = ts_stat_PT08.S2.NMHC.[1:(length(ts_stat_PT08.S2.NMHC.)-10)]
+THIRD = ts_stat_PT08.S2.NMHC.
 
 ts_PT08.S4.NO2. = ts(daily_data$PT08.S4.NO2., start=1, frequency = 1)
 ts_stat_PT08.S4.NO2. = diff(ts_PT08.S4.NO2.)
-FOURTH = ts_stat_PT08.S4.NO2.[(length(ts_stat_PT08.S4.NO2.)-4 ):length(ts_stat_PT08.S4.NO2.)]
+#FOURTH = ts_stat_PT08.S4.NO2.[1:(length(ts_stat_PT08.S4.NO2.)-10)]
+FOURTH = ts_stat_PT08.S4.NO2.
 
 Y<-ts(cbind(ytraining,lag(ytraining,1),lag(ytraining,2),lag(ytraining,3),lag(ytraining,4),lag(ytraining,5),lag(ytraining,6),lag(ytraining,7),lag(ytraining,8),lag(ytraining,9),lag(ytraining,10)))
-Y <- Y[-c(1:5),]
+Y <- Y[-c(1:10),]
 tail(Y)   # NA for the lagged versions at the end because we do not know the future!
+```
+
+```{r}
 
 ```
 ```{r}
 print(class(data))
-H <- diag(1,5)
+H <- diag(1,10)
 H = as.data.frame(H)
 #model <- SSModel(Y[-1,] ~-1+ SSMregression(~ FIRST[-c((n-4):(n+1))]+ SECOND[-c((n-4):(n+1))]+ THIRD[-c((n-4):(n+1))] + FOURTH[-c((n-4):(n+1))], Q=diag(NA,4),R=t(matrix(rep(diag(1,4),5),nrow=4))), H)
-SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H)
+SSMregression(~ FIRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(NA,4))
 
-model <- SSModel(Y[(n-5):(n-1),1] ~ -1+ SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H))
-#R=t(matrix(rep(diag(1,4),5),nrow=5)))
+
 ```
 ```{r}
-
-
+#model <- SSModel(Y[1:(n-10),1] ~ -1+ SSMregression(~ FIRST + SECOND + THIRD + FOURTH, Q=diag(1,4), H))
+#R=t(matrix(rep(diag(1,4),5),nrow=5)))
+model <- SSModel(Y[1:(n-15),1] ~ -1+ SSMregression(~ FIRST[-c(1:5,(n-9):n)] + SECOND[-c(1:5,(n-9):n)] + THIRD[-c(1:5,(n-9):n)] + FOURTH[-c(1:5,(n-9):n)], Q=diag(NA,4), H))
 fit <- fitSSM(model, inits = c(0.1,0.1,0.1,0.1), method = "BFGS")
-
+```
+```{r}
 model <- fit$model
 model$Q    # third coeffcient constant?
 model$H    # reduced version of the QLIK
 kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
-
+kal
 ```
 ```{r}
 # the parameters for the 1 step prediction
@@ -146,7 +156,7 @@ plot.ts(kal$a[,1:4] )
 ```
 ```{r}
 # the variances estimation as mean square errors for 10 lags
-sigma <- colMeans((kal$m-Y[(n-5):(n-1),1])^2,na.rm = TRUE)   # remove a burn-in period to estimate the variances
+sigma <- colMeans((kal$m-Y[1:(n-15),1])^2,na.rm = TRUE)   # remove a burn-in period to estimate the variances
 plot(sigma)
 
 ```
@@ -159,21 +169,20 @@ ts.plot(yhat)
 ```{r}
 # the estimation of the volatility, i.e. the condiitonal variance of the 1-step prediction
 
-vol<-ts(kal$F[1,]-rep(1,n-10)+rep(sigma[1],n-10),frequency = 4, start = c(1959,2))
+vol<-ts(kal$F[1,]-rep(1,n-15)+rep(sigma[1],n-15),frequency = 4, start = c(1959,2))
 ts.plot(vol)
 ```
 ```{r}
-kalman_frame <- data.frame(kal_unit <- as.vector(kal$a[,1]),
-                           kal_hum <- as.vector(kal$a[,2]),
-                           kal_wind <- as.vector(kal$a[,3]),
-                           kal_temp <- as.vector(kal$a[,4]),
-                           time <- daily_data$Date[(n-6):(n-1)])
-Date=c(1,2,3,4,5,6)
+kalman_frame <- data.frame(kal_03 <- as.vector(kal$a[,1]),
+                           kal_CO <- as.vector(kal$a[,2]),
+                           kal_NMHC <- as.vector(kal$a[,3]),
+                           kal_NO2 <- as.vector(kal$a[,4]),
+                           time <- daily_data$Date[1:(n-14)])
 # The parameters for the 1 step prediction
-ggplot(data=kalman_frame, aes(x=Date, y=kal_unit)) + geom_line()
-ggplot(data=kalman_frame, aes(x=Date, y=kal_hum)) + geom_line()
-ggplot(data=kalman_frame, aes(x=Date, y=kal_wind)) + geom_line()
-ggplot(data=kalman_frame, aes(x=Date, y=kal_temp)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_03)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_CO)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_NMHC)) + geom_line()
+ggplot(data=kalman_frame, aes(x=time, y=kal_NO2)) + geom_line()
 
 ```
 ```{r}
@@ -183,7 +192,7 @@ lowerCI<-ts(yhat-2*sqrt(vol),frequency = 4, start = c(1959,2))
 ts.plot(ytraining,yhat,upperCI,lowerCI,col=1:4)
 ts.plot(ts(cbind(ytraining[-(1:10)],yhat[-(1:10)],upperCI[-(1:10)],lowerCI[-(1:10)])),col=1:4)
 # Prediction out of sample
-ypred<-kal$m[n-10,]  # here we use different lags
-volpred<-kal$F[,n-10]-rep(1,10)+sigma # here we use the variances for different lags
-ts.plot(cbind(ytraining[(n-10):(n-1)],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
+ypred<-kal$m[n-15,]  # here we use different lags
+volpred<-kal$F[,n-15]-rep(1,10)+sigma # here we use the variances for different lags
+ts.plot(cbind(Y[1:(n-15)],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
 ```

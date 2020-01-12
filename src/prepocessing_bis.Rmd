@@ -134,8 +134,5 @@ summary(reg)
 
 ```
 ```{r}
-library(KFAS)
-ggplot(daily_data,  aes(x=Date, y=PT08.S4.NO2.)) + geom_line()
-daily_data$PT08_stat <- c(0,diff(daily_data$PT08.S4.NO2.))
-ggplot(data=daily_data, aes(x=Date, y=PT08_stat)) + geom_line()
+
 ```
