@@ -136,12 +136,9 @@ kal <- KFS(model,smoothing = "none",filtering=c("mean","state"))
 ```
 ```{r}
 # the parameters for the 1 step prediction
-plot.ts(kal$a[6:10] )  # third coefficient constant = 0?
+plot.ts(kal$a[6:10] )
 
 
-```
-```{r}
-plot.ts(kal$a[3+4*(0:9)] ) # Seems to be useless for all lags. We should remove it to reduce the dimension of the space.
 ```
 ```{r}
 # the parameters for the 1 step prediction
@@ -170,15 +167,14 @@ kalman_frame <- data.frame(kal_unit <- as.vector(kal$a[,1]),
                            kal_hum <- as.vector(kal$a[,2]),
                            kal_wind <- as.vector(kal$a[,3]),
                            kal_temp <- as.vector(kal$a[,4]),
-                           kal_count <- as.vector(kal$a[,5]),
-                           time <- daily_data$Date[1:(n-1)])
-
+                           time <- daily_data$Date[(n-6):(n-1)])
+Date=c(1,2,3,4,5,6)
 # The parameters for the 1 step prediction
 ggplot(data=kalman_frame, aes(x=Date, y=kal_unit)) + geom_line()
 ggplot(data=kalman_frame, aes(x=Date, y=kal_hum)) + geom_line()
 ggplot(data=kalman_frame, aes(x=Date, y=kal_wind)) + geom_line()
 ggplot(data=kalman_frame, aes(x=Date, y=kal_temp)) + geom_line()
-ggplot(data=kalman_frame, aes(x=Date, y=kal_count)) + geom_line()
+
 ```
 ```{r}
 # intervals of predictions in sample
@@ -189,5 +185,5 @@ ts.plot(ts(cbind(ytraining[-(1:10)],yhat[-(1:10)],upperCI[-(1:10)],lowerCI[-(1:1
 # Prediction out of sample
 ypred<-kal$m[n-10,]  # here we use different lags
 volpred<-kal$F[,n-10]-rep(1,10)+sigma # here we use the variances for different lags
-ts.plot(cbind(Y[(n-10):(n-1)],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
+ts.plot(cbind(ytraining[(n-10):(n-1)],as.numeric(ypred),as.numeric(ypred+2*sqrt(volpred)),as.numeric(ypred-2*sqrt(volpred))),col=1:4)
 ```
